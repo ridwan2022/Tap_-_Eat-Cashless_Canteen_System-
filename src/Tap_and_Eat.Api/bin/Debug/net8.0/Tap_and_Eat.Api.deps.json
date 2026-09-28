@@ -1,0 +1,23 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v8.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v8.0": {
+      "Tap_and_Eat.Api/1.0.0": {
+        "runtime": {
+          "Tap_and_Eat.Api.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "Tap_and_Eat.Api/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}
