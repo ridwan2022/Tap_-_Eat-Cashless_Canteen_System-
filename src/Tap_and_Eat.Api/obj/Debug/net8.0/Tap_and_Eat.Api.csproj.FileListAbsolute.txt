@@ -1,0 +1,7 @@
+C:\Users\Windows\OneDrive\Desktop\Tap_and_Eat\src\Tap_and_Eat.Api\obj\Debug\net8.0\rpswa.dswa.cache.json
+C:\Users\Windows\OneDrive\Desktop\Tap_and_Eat\src\Tap_and_Eat.Api\obj\Debug\net8.0\Tap_and_Eat.Api.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Windows\OneDrive\Desktop\Tap_and_Eat\src\Tap_and_Eat.Api\obj\Debug\net8.0\Tap_and_Eat.Api.AssemblyInfoInputs.cache
+C:\Users\Windows\OneDrive\Desktop\Tap_and_Eat\src\Tap_and_Eat.Api\obj\Debug\net8.0\Tap_and_Eat.Api.AssemblyInfo.cs
+C:\Users\Windows\OneDrive\Desktop\Tap_and_Eat\src\Tap_and_Eat.Api\obj\Debug\net8.0\Tap_and_Eat.Api.csproj.CoreCompileInputs.cache
+C:\Users\Windows\OneDrive\Desktop\Tap_and_Eat\src\Tap_and_Eat.Api\obj\Debug\net8.0\Tap_and_Eat.Api.MvcApplicationPartsAssemblyInfo.cache
+C:\Users\Windows\OneDrive\Desktop\Tap_and_Eat\src\Tap_and_Eat.Api\obj\Debug\net8.0\Tap_and_Eat.Api.sourcelink.json
