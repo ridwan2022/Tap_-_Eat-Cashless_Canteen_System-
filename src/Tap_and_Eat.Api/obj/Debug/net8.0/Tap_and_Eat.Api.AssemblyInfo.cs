@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Tap_and_Eat.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0aa4a9c7fb428ea7c81b4b4a37cc349cf889511f")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+97bf5aabfbf2b19d0089f7a0a0ead8f5b63101ea")]
 [assembly: System.Reflection.AssemblyProductAttribute("Tap_and_Eat.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Tap_and_Eat.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
