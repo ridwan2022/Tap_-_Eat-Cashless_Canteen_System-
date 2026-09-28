@@ -1,4 +1,3 @@
-namespace TapAndEat.Api.Models;
 
 /// <summary>
 /// Task 1.1 — user account schema: identity, hashed credential, and role.
