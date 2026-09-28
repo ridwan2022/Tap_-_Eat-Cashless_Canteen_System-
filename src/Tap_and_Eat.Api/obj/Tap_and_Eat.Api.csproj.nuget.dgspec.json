@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Windows\\OneDrive\\Desktop\\Tap_and_Eat\\src\\Tap_and_eat.Api\\Tap_and_Eat.Api.csproj": {}
+    "C:\\Users\\Windows\\OneDrive\\Desktop\\Tap_and_Eat\\src\\Tap_and_Eat.Api\\Tap_and_Eat.Api.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Windows\\OneDrive\\Desktop\\Tap_and_Eat\\src\\Tap_and_eat.Api\\Tap_and_Eat.Api.csproj": {
+    "C:\\Users\\Windows\\OneDrive\\Desktop\\Tap_and_Eat\\src\\Tap_and_Eat.Api\\Tap_and_Eat.Api.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Windows\\OneDrive\\Desktop\\Tap_and_Eat\\src\\Tap_and_eat.Api\\Tap_and_Eat.Api.csproj",
+        "projectUniqueName": "C:\\Users\\Windows\\OneDrive\\Desktop\\Tap_and_Eat\\src\\Tap_and_Eat.Api\\Tap_and_Eat.Api.csproj",
         "projectName": "Tap_and_Eat.Api",
-        "projectPath": "C:\\Users\\Windows\\OneDrive\\Desktop\\Tap_and_Eat\\src\\Tap_and_eat.Api\\Tap_and_Eat.Api.csproj",
+        "projectPath": "C:\\Users\\Windows\\OneDrive\\Desktop\\Tap_and_Eat\\src\\Tap_and_Eat.Api\\Tap_and_Eat.Api.csproj",
         "packagesPath": "C:\\Users\\Windows\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Windows\\OneDrive\\Desktop\\Tap_and_Eat\\src\\Tap_and_eat.Api\\obj\\",
+        "outputPath": "C:\\Users\\Windows\\OneDrive\\Desktop\\Tap_and_Eat\\src\\Tap_and_Eat.Api\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Windows\\AppData\\Roaming\\NuGet\\NuGet.Config"
