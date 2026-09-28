@@ -3,4 +3,8 @@
   <Folder Name="/src/Tap_and_eat.Api/">
     <Project Path="src/Tap_and_eat.Api/Tap_and_Eat.Api.csproj" />
   </Folder>
+  <Folder Name="/tests/" />
+  <Folder Name="/tests/unit_tests/">
+    <Project Path="tests/unit_tests/TapAndEat.Tests.csproj" />
+  </Folder>
 </Solution>
