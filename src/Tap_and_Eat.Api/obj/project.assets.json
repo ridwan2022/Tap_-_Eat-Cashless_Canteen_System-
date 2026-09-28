@@ -8,19 +8,19 @@
     "net8.0": []
   },
   "packageFolders": {
-    "C:\\Users\\Windows\\.nuget\\packages\\": {}
+    "C:\\Users\\Hp\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Windows\\OneDrive\\Desktop\\Tap_and_Eat\\src\\Tap_and_eat.Api\\Tap_and_Eat.Api.csproj",
+      "projectUniqueName": "D:\\TapAndEat\\Tap_-_Eat-Cashless_Canteen_System-\\src\\Tap_and_Eat.Api\\Tap_and_Eat.Api.csproj",
       "projectName": "Tap_and_Eat.Api",
-      "projectPath": "C:\\Users\\Windows\\OneDrive\\Desktop\\Tap_and_Eat\\src\\Tap_and_eat.Api\\Tap_and_Eat.Api.csproj",
-      "packagesPath": "C:\\Users\\Windows\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Windows\\OneDrive\\Desktop\\Tap_and_Eat\\src\\Tap_and_eat.Api\\obj\\",
+      "projectPath": "D:\\TapAndEat\\Tap_-_Eat-Cashless_Canteen_System-\\src\\Tap_and_Eat.Api\\Tap_and_Eat.Api.csproj",
+      "packagesPath": "C:\\Users\\Hp\\.nuget\\packages\\",
+      "outputPath": "D:\\TapAndEat\\Tap_-_Eat-Cashless_Canteen_System-\\src\\Tap_and_Eat.Api\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\Windows\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "C:\\Users\\Hp\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net8.0"
