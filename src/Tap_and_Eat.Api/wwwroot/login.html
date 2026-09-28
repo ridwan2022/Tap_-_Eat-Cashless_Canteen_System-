@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Log in — Tap &amp; Eat</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body>
+  <div id="site-header"></div>
+  <main class="container">
+    <div class="card" style="max-width:420px; margin:0 auto;">
+      <h1>Log in</h1>
+      <form id="login-form" class="stack" novalidate>
+        <div>
+          <label for="email">Email</label>
+          <input type="email" id="email" required autocomplete="username" />
+          <div class="msg error hidden" id="email-error"></div>
+        </div>
+        <div>
+          <label for="password">Password</label>
+          <input type="password" id="password" required autocomplete="current-password" />
+          <div class="msg error hidden" id="password-error"></div>
+        </div>
+        <div id="form-msg" class="msg hidden"></div>
+        <button type="submit" id="submit-btn">Log in</button>
+      </form>
+      <p class="muted" style="margin-top:16px;">
+        No account? <a href="/register.html">Sign up</a> &middot;
+        <a href="/forgot-password.html">Forgot password?</a>
+      </p>
+    </div>
+  </main>
+  <script src="/js/site.js"></script>
+  <script>
+    const form = document.getElementById("login-form");
+    const formMsg = document.getElementById("form-msg");
+    const emailInput = document.getElementById("email");
+    const passwordInput = document.getElementById("password");
+    const emailError = document.getElementById("email-error");
+    const passwordError = document.getElementById("password-error");
+    const submitBtn = document.getElementById("submit-btn");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      hideMessage(formMsg);
+      hideMessage(emailError);
+      hideMessage(passwordError);
+
+      // Inline validation for empty/invalid fields (Task 1.4 acceptance criteria).
+      let valid = true;
+      if (!emailInput.value.trim()) {
+        showMessage(emailError, "Email is required.", "error");
+        valid = false;
+      }
+      if (!passwordInput.value) {
+        showMessage(passwordError, "Password is required.", "error");
+        valid = false;
+      }
+      if (!valid) return;
+
+      submitBtn.disabled = true;
+      try {
+        const result = await api("/api/auth/login", {
+          method: "POST",
+          auth: false,
+          body: { email: emailInput.value.trim(), password: passwordInput.value }
+        });
+        Auth.save(result);
+        window.location.href = result.user.role === "Admin" ? "/admin.html" : "/menu.html";
+      } catch (err) {
+        showMessage(formMsg, err.message, "error");
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
