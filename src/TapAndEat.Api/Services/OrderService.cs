@@ -4,7 +4,7 @@ using TapAndEat.Api.Infrastructure;
 using TapAndEat.Api.Models;
 using TapAndEat.Api.Repositories;
 
-using TapAndEat.Api.Services;
+namespace TapAndEat.Api.Services;
 
 /// <summary>
 /// Sprint 2 — the order lifecycle: PendingPayment → Paid → Collected, with
