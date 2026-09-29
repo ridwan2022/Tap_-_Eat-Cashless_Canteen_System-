@@ -76,3 +76,4 @@ public class InMemoryQueueTokenRepository : IQueueTokenRepository
         return Task.CompletedTask;
     }
 }
+
