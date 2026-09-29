@@ -87,3 +87,4 @@ public static class BusinessTime
     public static string DayKey(DateTimeOffset utc, double offsetHours) =>
         ToLocal(utc, offsetHours).ToString("yyyy-MM-dd");
 }
+
