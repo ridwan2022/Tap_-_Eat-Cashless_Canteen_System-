@@ -29,7 +29,7 @@ public class QueueToken
     /// <summary>Total kitchen work this order adds to the queue (sum of quantity x item prep time).</summary>
     public int WorkMinutes { get; init; }
 
-    /// <summary>Time to make the order once the kitchen gets to it (its slowest line).</summary>
+    
     public int OwnMinutes { get; init; }
 
     public DateTimeOffset CreatedAtUtc { get; init; } = DateTimeOffset.UtcNow;
