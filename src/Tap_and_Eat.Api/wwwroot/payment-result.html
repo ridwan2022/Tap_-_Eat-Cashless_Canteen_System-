@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Payment result — Tap &amp; Eat</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body>
+  <div id="site-header"></div>
+  <main class="container">
+    <div class="card" style="max-width:560px;margin:0 auto;">
+      <h1 id="headline">Confirming your payment…</h1>
+      <div id="body"></div>
+      <div id="msg" class="msg hidden"></div>
+    </div>
+  </main>
+  <script src="/js/site.js"></script>
+  <script>
+    if (!requireAuth()) throw new Error("redirecting");
+    const params = new URLSearchParams(location.search);
+    const body = document.getElementById("body");
+    const headline = document.getElementById("headline");
+    let tries = 0;
+
+    function render(p) {
+      if (p.status === "Succeeded" && p.purpose === "WalletTopUp") {
+        headline.textContent = "Top-up successful ✅";
+        body.innerHTML = `<p>${money(p.amount)} was added to your wallet.</p><p><a class="btn" href="/wallet.html">View wallet</a></p>`;
+      } else if (p.status === "Succeeded" && p.refundedToWallet) {
+        headline.textContent = "Payment received — order no longer available";
+        body.innerHTML = `<p>${escapeHtml(p.failureReason || "")}</p><p><a class="btn" href="/wallet.html">View wallet</a></p>`;
+      } else if (p.status === "Succeeded") {
+        headline.textContent = "Payment successful ✅";
+        const t = p.token;
+        body.innerHTML = `
+          <p>Your token</p><div class="token-badge">${t ? escapeHtml(t.label) : ""}</div>
+          <p>${t ? "Estimated wait: <b>about " + t.remainingMinutes + " min</b>" : ""}</p>
+          <p class="muted">Tap your RFID card at the counter when your token is called. No card? Show this code:</p>
+          <code class="tok">${escapeHtml(p.paymentToken || "")}</code>
+          <p style="margin-top:16px;"><a class="btn" href="/orders.html">Track my order</a></p>`;
+      } else if (p.status === "Initiated") {
+        headline.textContent = "Confirming your payment…";
+        body.innerHTML = `<p class="muted">We're waiting for confirmation from ${escapeHtml(p.method)}. Please don't pay again — this page updates by itself.</p>`;
+      } else {
+        headline.textContent = p.status === "Cancelled" ? "Payment cancelled" : "Payment failed";
+        body.innerHTML = `<p>${escapeHtml(p.failureReason || "The payment did not go through.")}</p>
+          <p class="muted">You have not been charged for a failed payment. The order is still held for you.</p>
+          <p><a class="btn" href="${p.orderId ? "/checkout.html?orderId=" + p.orderId : "/wallet.html"}">Try again</a></p>`;
+      }
+    }
+
+    async function poll(first) {
+      try {
+        let p = await api("/api/payments/" + params.get("paymentId"));
+        if (p.status === "Initiated" && !first) p = await api(`/api/payments/${p.id}/verify`, { method: "POST" });
+        render(p);
+        if (p.status === "Initiated" && ++tries < 20) setTimeout(() => poll(false), 3000);
+      } catch (e) { showMessage(document.getElementById("msg"), e.message, "error"); }
+    }
+    if (params.get("error") || !params.get("paymentId")) {
+      headline.textContent = "We couldn't find that payment";
+      body.innerHTML = '<p><a class="btn" href="/orders.html">My orders</a></p>';
+    } else poll(true);
+  </script>
+</body>
+</html>

@@ -14,6 +14,7 @@ public enum QueueTokenStatus
 /// </summary>
 public class QueueToken
 {
+
     public Guid Id { get; init; } = Guid.NewGuid();
     public Guid OrderId { get; init; }
 

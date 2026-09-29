@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mock payment gateway — Tap &amp; Eat</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body>
+  <div id="site-header"></div>
+  <main class="container">
+    <div class="card" style="max-width:460px;margin:0 auto;">
+      <p class="pill tag">Simulated checkout — no real money</p>
+      <h1 id="title">Mock payment</h1>
+      <p>Amount to pay: <b id="amount">…</b></p>
+      <p class="muted">This page stands in for the bKash / Nagad hosted checkout page while the gateway is in Mock mode.</p>
+      <div id="msg" class="msg hidden"></div>
+      <div class="row">
+        <button id="pay">Pay</button>
+        <button id="fail" class="danger">Decline</button>
+        <button id="cancel" class="secondary">Cancel</button>
+      </div>
+    </div>
+  </main>
+  <script src="/js/site.js"></script>
+  <script>
+    const ref = new URLSearchParams(location.search).get("ref");
+    const msg = document.getElementById("msg");
+    async function decide(outcome) {
+      try {
+        const r = await api(`/api/mock-gateway/${encodeURIComponent(ref)}/decide`, { method: "POST", auth: false, body: { outcome } });
+        location.href = r.redirectUrl;   // exactly what the real gateway does: send the browser back to us
+      } catch (e) { showMessage(msg, e.message, "error"); }
+    }
+    document.getElementById("pay").onclick = () => decide("success");
+    document.getElementById("fail").onclick = () => decide("failed");
+    document.getElementById("cancel").onclick = () => decide("cancelled");
+    api(`/api/mock-gateway/${encodeURIComponent(ref)}`, { auth: false }).then(p => {
+      document.getElementById("title").textContent = p.method + " (mock) checkout";
+      document.getElementById("amount").textContent = money(p.amount);
+    }).catch(() => showMessage(msg, "This mock payment doesn't exist (or the gateway is in Live mode).", "error"));
+  </script>
+</body>
+</html>
