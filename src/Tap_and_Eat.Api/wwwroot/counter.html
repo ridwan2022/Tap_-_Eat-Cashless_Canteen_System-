@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Counter — Tap &amp; Eat</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body>
+  <div id="site-header"></div>
+  <main class="container">
+    <div class="row between"><h1>Counter</h1><span class="muted" id="live">● connecting…</span></div>
+    <div class="card">
+      <div class="tabs">
+        <button id="mode-collect" class="active">Collect meal</button>
+        <button id="mode-pay">Tap to pay (wallet)</button>
+      </div>
+      <label for="scan" id="scan-label">Tap the customer's RFID card</label>
+      <input type="text" id="scan" class="scan" autocomplete="off" placeholder="Card ID — USB readers type it here" autofocus />
+      <p class="muted">Keyboard-style RFID readers type the card ID and press Enter. Click the box first if it lost focus. Try <code>04A1B2C3</code>.</p>
+      <details style="margin-top:8px;"><summary>No card? Look up by token</summary>
+        <div class="row" style="margin-top:8px;">
+          <input type="text" id="manual" placeholder="Token number (e.g. 12) or payment token" style="max-width:420px;" />
+          <button id="manual-btn" class="secondary">Verify</button>
+        </div>
+      </details>
+      <div id="result"></div>
+    </div>
+    <div class="card"><h2>Recent taps</h2>
+      <table><thead><tr><th>Time</th><th>Source</th><th>Customer</th><th>Token</th><th>Result</th><th>Detail</th></tr></thead><tbody id="recent"></tbody></table>
+    </div>
+  </main>
+  <script src="/js/site.js"></script>
+  <script>
+    if (!requireStaff()) throw new Error("redirecting");
+    let mode = "collect";
+    const scan = document.getElementById("scan"), resultEl = document.getElementById("result");
+    function setMode(m) {
+      mode = m;
+      document.getElementById("mode-collect").className = m === "collect" ? "active" : "";
+      document.getElementById("mode-pay").className = m === "pay" ? "active" : "";
+      document.getElementById("scan-label").textContent = m === "collect" ? "Tap the customer's RFID card" : "Tap the card to pay the customer's unpaid order from their wallet";
+      scan.focus();
+    }
+    document.getElementById("mode-collect").onclick = () => setMode("collect");
+    document.getElementById("mode-pay").onclick = () => setMode("pay");
+
+    function showResult(r) {
+      const ok = r.outcome === "Approved";
+      resultEl.innerHTML = `<div class="big-result ${ok ? "ok" : "no"}">
+        <h2>${ok ? "✅ Approved" : "⛔ " + escapeHtml(r.reason.replace(/([A-Z])/g, " $1").trim())}</h2>
+        ${r.tokenLabel ? `<div class="token-badge">${escapeHtml(r.tokenLabel)}</div>` : ""}
+        ${r.customerName ? `<div>${escapeHtml(r.customerName)}</div>` : ""}
+        <div>${escapeHtml(r.message)}</div>
+        ${r.items ? `<div class="muted">${r.items.map(i => i.quantity + "× " + escapeHtml(i.name)).join(", ")}</div>` : ""}</div>`;
+    }
+    function row(r) {
+      return `<tr><td>${new Date(r.tappedAtUtc).toLocaleTimeString()}</td><td>${r.source}</td><td>${escapeHtml(r.customerName || "—")}</td>
+        <td>${escapeHtml(r.tokenLabel || "—")}</td><td><span class="pill ${r.outcome.toLowerCase()}">${r.outcome}</span></td><td>${escapeHtml(r.message)}</td></tr>`;
+    }
+    async function loadRecent() {
+      const rows = await api("/api/counter/recent?count=15");
+      document.getElementById("recent").innerHTML = rows.map(row).join("") || '<tr><td colspan="6" class="muted">No taps yet.</td></tr>';
+    }
+    scan.addEventListener("keydown", async (e) => {
+      if (e.key !== "Enter" || !scan.value.trim()) return;
+      const cardUid = scan.value.trim(); scan.value = "";
+      try { showResult(await api(mode === "collect" ? "/api/counter/tap" : "/api/counter/tap-to-pay", { method: "POST", body: { cardUid } })); }
+      catch (err) { resultEl.innerHTML = `<div class="msg error">${escapeHtml(err.message)}</div>`; }
+      scan.focus();
+    });
+    document.getElementById("manual-btn").onclick = async () => {
+      const v = document.getElementById("manual").value.trim(); if (!v) return;
+      const body = /^\d+$/.test(v) ? { tokenNumber: parseInt(v, 10) } : { paymentToken: v };
+      try { showResult(await api("/api/counter/verify", { method: "POST", body })); }
+      catch (err) { resultEl.innerHTML = `<div class="msg error">${escapeHtml(err.message)}</div>`; }
+    };
+    loadRecent();
+    const live = document.getElementById("live");
+    const es = new EventSource("/api/stream/kitchen?access_token=" + encodeURIComponent(Auth.token()));
+    es.addEventListener("ready", () => { live.textContent = "● live"; });
+    es.addEventListener("tap", loadRecent);   // taps made on other counters show up here too
+    es.onerror = () => { live.textContent = "○ reconnecting…"; };
+  </script>
+</body>
+</html>
