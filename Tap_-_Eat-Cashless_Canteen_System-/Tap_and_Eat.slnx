@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/Tap_and_eat.Api/">
+    <Project Path="src/Tap_and_eat.Api/Tap_and_Eat.Api.csproj" />
+  </Folder>
+</Solution>

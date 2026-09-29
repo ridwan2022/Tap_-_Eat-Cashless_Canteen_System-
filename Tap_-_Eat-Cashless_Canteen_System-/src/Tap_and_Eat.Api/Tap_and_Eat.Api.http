@@ -1,0 +1,6 @@
+@Tap_and_Eat.Api_HostAddress = http://localhost:5095
+
+GET {{Tap_and_Eat.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

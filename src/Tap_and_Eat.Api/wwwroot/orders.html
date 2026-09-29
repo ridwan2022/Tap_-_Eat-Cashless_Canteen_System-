@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>My orders — Tap &amp; Eat</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body>
+  <div id="site-header"></div>
+  <main class="container">
+    <h1>My orders</h1>
+    <div id="msg" class="msg hidden"></div>
+    <div id="list"></div>
+    <p id="empty" class="muted hidden">No orders yet. <a href="/menu.html">Browse the menu</a>.</p>
+  </main>
+  <script src="/js/site.js"></script>
+  <script>
+    if (!requireAuth()) throw new Error("redirecting");
+    const list = document.getElementById("list");
+    async function load() {
+      try {
+        const orders = await api("/api/orders/mine");
+        document.getElementById("empty").classList.toggle("hidden", orders.length > 0);
+        list.innerHTML = orders.map(o => {
+          const t = o.token;
+          const items = o.lines.map(l => `${l.quantity}× ${escapeHtml(l.name)}`).join(", ");
+          let extra = "";
+          if (o.status === "PendingPayment") extra = `<a class="btn" href="/checkout.html?orderId=${o.id}">Pay now</a>`;
+          if (t && o.status === "Paid") {
+            extra = `<div><span class="token-badge">${escapeHtml(t.label)}</span>
+              <span class="pill ${t.status.toLowerCase()}">${t.status}</span>
+              ${t.status === "Ready" ? "<b>— ready to collect!</b>" : "<span class='muted'>about " + t.remainingMinutes + " min</span>"}</div>
+              <div class="muted">Tap your card at the counter · or show <code class="tok">${escapeHtml(o.paymentToken || "")}</code></div>`;
+          }
+          if (t && o.status === "Collected") extra = `<span class="muted">${escapeHtml(t.label)} collected</span>`;
+          return `<div class="card">
+            <div class="row between"><strong>${money(o.total)}</strong><span class="pill ${o.status.toLowerCase()}">${o.status}</span></div>
+            <div class="muted">${items} · ${new Date(o.createdAtUtc).toLocaleString()}</div>
+            <div style="margin-top:10px;">${extra}</div></div>`;
+        }).join("");
+      } catch (e) { showMessage(document.getElementById("msg"), e.message, "error"); }
+    }
+    load(); setInterval(load, 5000);   // live token status + estimate
+  </script>
+</body>
+</html>
