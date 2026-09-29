@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kitchen board — Tap &amp; Eat</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body>
+  <div id="site-header"></div>
+  <main class="container">
+    <div class="row between"><h1>Kitchen board</h1><span class="muted" id="live">● connecting…</span></div>
+    <p class="muted">Paid orders in queue order. Times are live estimates and update as the queue moves.</p>
+    <div id="msg" class="msg hidden"></div>
+    <div id="board" class="board"></div>
+    <p id="empty" class="muted hidden">No active orders. 🎉</p>
+  </main>
+  <script src="/js/site.js"></script>
+  <script>
+    if (!requireStaff()) throw new Error("redirecting");
+    const boardEl = document.getElementById("board");
+    async function load() {
+      try {
+        const b = await api("/api/kitchen/board");
+        document.getElementById("empty").classList.toggle("hidden", b.tokens.length > 0);
+        boardEl.innerHTML = b.tokens.map(t => `
+          <div class="ticket ${t.status.toLowerCase()}">
+            <div class="row between"><span class="token-badge">${escapeHtml(t.label)}</span><span class="pill ${t.status.toLowerCase()}">${t.status}</span></div>
+            <div>${t.items.map(i => `${i.quantity}× ${escapeHtml(i.name)}`).join("<br>")}</div>
+            <div class="muted" style="margin:6px 0;">${t.status === "Ready" ? "Waiting for pickup" : "≈ " + t.remainingMinutes + " min left"}</div>
+            <div class="row">
+              ${t.status === "Queued" ? `<button data-id="${t.id}" data-status="Preparing">Start</button>` : ""}
+              ${t.status !== "Ready" ? `<button data-id="${t.id}" data-status="Ready">Mark ready</button>` : ""}
+            </div>
+          </div>`).join("");
+      } catch (e) { showMessage(document.getElementById("msg"), e.message, "error"); }
+    }
+    boardEl.addEventListener("click", async (e) => {
+      const b = e.target.closest("button[data-id]"); if (!b) return;
+      try { await api(`/api/kitchen/tokens/${b.dataset.id}/status`, { method: "PUT", body: { status: b.dataset.status } }); load(); }
+      catch (err) { showMessage(document.getElementById("msg"), err.message, "error"); }
+    });
+    load();
+
+    // Live updates over Server-Sent Events (Task 6.4). EventSource can't set headers, so the token goes in the query string.
+    const live = document.getElementById("live");
+    const es = new EventSource("/api/stream/kitchen?access_token=" + encodeURIComponent(Auth.token()));
+    es.addEventListener("ready", () => { live.textContent = "● live"; });
+    es.addEventListener("token", load);
+    es.addEventListener("tap", load);
+    es.onerror = () => { live.textContent = "○ reconnecting…"; };
+    setInterval(load, 20000);   // safety net so estimates keep ticking down
+  </script>
+</body>
+</html>

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Wallets & cards — Tap &amp; Eat</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body>
+  <div id="site-header"></div>
+  <main class="container">
+    <div class="row between"><h1>Wallets, cards &amp; subsidies</h1><button id="run-btn">Run subsidies now</button></div>
+    <p class="muted">Cards are issued here so nobody can attach a card they don't hold. Subsidies are also credited automatically by the background scheduler (once per period).</p>
+    <div id="msg" class="msg hidden"></div>
+    <div class="card"><table>
+      <thead><tr><th>User</th><th>Balance</th><th>RFID card</th><th>Subsidy</th></tr></thead>
+      <tbody id="rows"></tbody></table></div>
+  </main>
+  <script src="/js/site.js"></script>
+  <script>
+    if (!requireAdmin()) throw new Error("redirecting");
+    const msg = document.getElementById("msg");
+    async function load() {
+      const wallets = await api("/api/admin/wallets");
+      document.getElementById("rows").innerHTML = wallets.map(w => `<tr data-uid="${w.userId}">
+        <td><b>${escapeHtml(w.fullName)}</b><div class="muted">${escapeHtml(w.email)}</div></td>
+        <td>${money(w.balance)}</td>
+        <td>${w.rfidCardUid
+            ? `<code>${escapeHtml(w.rfidCardUid)}</code> <button class="secondary" data-act="unlink">Unlink</button>`
+            : `<div class="row"><input type="text" data-f="card" placeholder="Card ID" style="width:130px;"><button data-act="link">Link</button></div>`}</td>
+        <td><div class="row">
+          <input type="number" data-f="amt" min="1" step="0.01" placeholder="৳" style="width:80px;" value="${w.subsidy ? w.subsidy.amount : ""}">
+          <select data-f="freq" style="width:110px;">${["Daily","Weekly","Monthly"].map(f => `<option ${w.subsidy && w.subsidy.frequency === f ? "selected" : ""}>${f}</option>`).join("")}</select>
+          <label style="font-weight:400;"><input type="checkbox" data-f="on" ${!w.subsidy || w.subsidy.isActive ? "checked" : ""}> on</label>
+          <button data-act="subsidy">Save</button></div>
+          ${w.subsidy && w.subsidy.lastCreditedPeriodKey ? `<div class="muted">last credited: ${w.subsidy.lastCreditedPeriodKey}</div>` : ""}</td></tr>`).join("");
+    }
+    document.getElementById("rows").addEventListener("click", async (e) => {
+      const b = e.target.closest("button[data-act]"); if (!b) return;
+      const tr = b.closest("tr"), uid = tr.dataset.uid, f = n => tr.querySelector(`[data-f=${n}]`);
+      hideMessage(msg);
+      try {
+        if (b.dataset.act === "link") await api(`/api/admin/wallets/${uid}/card`, { method: "PUT", body: { cardUid: f("card").value } });
+        if (b.dataset.act === "unlink") await api(`/api/admin/wallets/${uid}/card`, { method: "DELETE" });
+        if (b.dataset.act === "subsidy") await api(`/api/admin/wallets/${uid}/subsidy`, { method: "PUT",
+          body: { amount: parseFloat(f("amt").value), frequency: f("freq").value, isActive: f("on").checked } });
+        showMessage(msg, "Saved.", "success"); load();
+      } catch (err) { showMessage(msg, err.message, "error"); }
+    });
+    document.getElementById("run-btn").onclick = async () => {
+      try { const r = await api("/api/admin/subsidies/run", { method: "POST" });
+        showMessage(msg, `Subsidy run finished: ${r.credited} credited, ${r.alreadyCredited} already up to date.`, "success"); load(); }
+      catch (err) { showMessage(msg, err.message, "error"); }
+    };
+    load().catch(err => showMessage(msg, err.message, "error"));
+  </script>
+</body>
+</html>
