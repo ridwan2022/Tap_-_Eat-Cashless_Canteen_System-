@@ -35,12 +35,49 @@ const Auth = {
   isAdmin() {
     const u = Auth.user();
     return !!u && u.role === "Admin";
+  },
+
+  isStaff() {
+    const u = Auth.user();
+    return !!u && (u.role === "Admin" || u.role === "KitchenStaff");
   }
 };
 
+/** Sprint 2 — the shopping cart lives in localStorage until an order is placed. */
+const Cart = {
+  KEY: "tapandeat.cart",
+  get() {
+    try { return JSON.parse(localStorage.getItem(Cart.KEY)) || {}; } catch { return {}; }
+  },
+  save(cart) { localStorage.setItem(Cart.KEY, JSON.stringify(cart)); },
+  add(item) {
+    const cart = Cart.get();
+    const line = cart[item.id] || { id: item.id, name: item.name, price: item.price, qty: 0 };
+    line.qty = Math.min(20, line.qty + 1);
+    line.price = item.price;
+    cart[item.id] = line;
+    Cart.save(cart);
+  },
+  setQty(id, qty) {
+    const cart = Cart.get();
+    if (qty <= 0) delete cart[id]; else if (cart[id]) cart[id].qty = Math.min(20, qty);
+    Cart.save(cart);
+  },
+  clear() { localStorage.removeItem(Cart.KEY); },
+  count() { return Object.values(Cart.get()).reduce((n, l) => n + l.qty, 0); },
+  lines() { return Object.values(Cart.get()); }
+};
+
+/** One fresh idempotency key per checkout attempt (Task 4.3). */
+function newIdempotencyKey() {
+  return (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random()).replace(/-/g, "");
+}
+
+function money(n) { return "৳" + Number(n).toFixed(2); }
+
 /** Thin fetch wrapper: adds the bearer token, parses JSON, throws readable errors. */
-async function api(path, { method = "GET", body, auth = true } = {}) {
-  const headers = { "Content-Type": "application/json" };
+async function api(path, { method = "GET", body, auth = true, headers: extraHeaders = {} } = {}) {
+  const headers = { "Content-Type": "application/json", ...extraHeaders };
   if (auth) {
     const token = Auth.token();
     if (token) headers["Authorization"] = "Bearer " + token;
@@ -85,8 +122,19 @@ function renderNav() {
 
   const user = Auth.user();
   const links = [`<a href="/menu.html">Menu</a>`];
+  if (user) {
+    const n = Cart.count();
+    links.push(`<a href="/checkout.html">Cart${n ? " (" + n + ")" : ""}</a>`);
+    links.push(`<a href="/orders.html">My orders</a>`);
+    links.push(`<a href="/wallet.html">Wallet</a>`);
+  }
+  if (Auth.isStaff()) {
+    links.push(`<a href="/kitchen.html">Kitchen</a>`);
+    links.push(`<a href="/counter.html">Counter</a>`);
+  }
   if (Auth.isAdmin()) {
     links.push(`<a href="/admin.html">Admin</a>`);
+    links.push(`<a href="/admin-wallets.html">Wallets</a>`);
   }
 
   let rightSide;
@@ -121,6 +169,16 @@ function requireAuth() {
   const user = Auth.user();
   if (!user) {
     window.location.href = "/login.html";
+    return null;
+  }
+  return user;
+}
+
+/** Redirects non-staff (kitchen staff / admin) away. */
+function requireStaff() {
+  const user = requireAuth();
+  if (user && !Auth.isStaff()) {
+    window.location.href = "/menu.html";
     return null;
   }
   return user;
