@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Checkout — Tap &amp; Eat</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body>
+  <div id="site-header"></div>
+  <main class="container">
+    <div id="cart-card" class="card">
+      <h1>Your cart</h1>
+      <table><thead><tr><th>Item</th><th>Price</th><th>Qty</th><th>Total</th><th></th></tr></thead><tbody id="cart-body"></tbody></table>
+      <p id="cart-empty" class="muted hidden">Your cart is empty. <a href="/menu.html">Browse the menu</a>.</p>
+      <div class="row between" style="margin-top:14px;">
+        <strong>Total: <span id="cart-total">৳0.00</span></strong>
+        <button id="place-btn">Place order</button>
+      </div>
+      <div id="cart-msg" class="msg hidden"></div>
+    </div>
+
+    <div id="pay-card" class="card hidden">
+      <h1>Pay for your order</h1>
+      <p>Order total: <strong id="order-total"></strong> <span id="order-status" class="pill"></span></p>
+      <p class="muted" id="order-expiry"></p>
+      <div class="method-grid">
+        <label><input type="radio" name="method" value="bKash" checked /> bKash</label>
+        <label><input type="radio" name="method" value="Nagad" /> Nagad</label>
+        <label><input type="radio" name="method" value="Wallet" /> Wallet <span class="muted" id="wallet-bal"></span></label>
+      </div>
+      <div class="row">
+        <button id="pay-btn">Pay now</button>
+        <button id="cancel-btn" class="secondary">Cancel order</button>
+      </div>
+      <div id="pay-msg" class="msg hidden"></div>
+    </div>
+  </main>
+  <script src="/js/site.js"></script>
+  <script>
+    if (!requireAuth()) throw new Error("redirecting");
+    const cartBody = document.getElementById("cart-body");
+    const cartMsg = document.getElementById("cart-msg");
+    const payMsg = document.getElementById("pay-msg");
+    let order = null;
+
+    function renderCart() {
+      const lines = Cart.lines();
+      cartBody.innerHTML = lines.map(l => `
+        <tr>
+          <td>${escapeHtml(l.name)}</td><td>${money(l.price)}</td>
+          <td><span class="qty"><button class="secondary" data-dec="${l.id}">−</button>${l.qty}<button class="secondary" data-inc="${l.id}">+</button></span></td>
+          <td>${money(l.price * l.qty)}</td>
+          <td><button class="secondary" data-rm="${l.id}">Remove</button></td>
+        </tr>`).join("");
+      document.getElementById("cart-empty").classList.toggle("hidden", lines.length > 0);
+      document.getElementById("place-btn").disabled = lines.length === 0;
+      document.getElementById("cart-total").textContent = money(lines.reduce((n, l) => n + l.price * l.qty, 0));
+      renderNav();
+    }
+    cartBody.addEventListener("click", (e) => {
+      const t = e.target;
+      const lines = Object.fromEntries(Cart.lines().map(l => [l.id, l]));
+      if (t.dataset.inc) Cart.setQty(t.dataset.inc, lines[t.dataset.inc].qty + 1);
+      if (t.dataset.dec) Cart.setQty(t.dataset.dec, lines[t.dataset.dec].qty - 1);
+      if (t.dataset.rm) Cart.setQty(t.dataset.rm, 0);
+      renderCart();
+    });
+
+    function showPay(o) {
+      order = o;
+      document.getElementById("cart-card").classList.add("hidden");
+      document.getElementById("pay-card").classList.remove("hidden");
+      document.getElementById("order-total").textContent = money(o.total);
+      const st = document.getElementById("order-status");
+      st.textContent = o.status; st.className = "pill " + o.status.toLowerCase();
+      document.getElementById("order-expiry").textContent =
+        "Your items are held until " + new Date(o.expiresAtUtc).toLocaleTimeString() + " — pay before then.";
+      api("/api/wallet").then(w => { document.getElementById("wallet-bal").textContent = "(" + money(w.balance) + ")"; });
+    }
+
+    document.getElementById("place-btn").onclick = async () => {
+      hideMessage(cartMsg);
+      try {
+        const o = await api("/api/orders", { method: "POST",
+          body: { items: Cart.lines().map(l => ({ menuItemId: l.id, quantity: l.qty })) } });
+        Cart.clear(); renderNav();
+        history.replaceState(null, "", "/checkout.html?orderId=" + o.id);
+        showPay(o);
+      } catch (e) { showMessage(cartMsg, e.message, "error"); }
+    };
+
+    // One idempotency key per attempt: a double-click / retried request can never charge twice.
+    let attemptKey = newIdempotencyKey();
+    document.getElementById("pay-btn").onclick = async () => {
+      hideMessage(payMsg);
+      const btn = document.getElementById("pay-btn");
+      btn.disabled = true;
+      const method = document.querySelector("input[name=method]:checked").value;
+      try {
+        const p = await api("/api/payments/order", { method: "POST", body: { orderId: order.id, method }, headers: { "Idempotency-Key": attemptKey } });
+        if (p.status === "Initiated" && p.redirectUrl) { location.href = p.redirectUrl; return; }
+        if (p.status === "Succeeded") { location.href = "/payment-result.html?paymentId=" + p.id; return; }
+        showMessage(payMsg, (p.failureReason || "Payment failed.") + " You can try again.", "error");
+        attemptKey = newIdempotencyKey();      // a genuine retry is a new attempt
+      } catch (e) { showMessage(payMsg, e.message, "error"); attemptKey = newIdempotencyKey(); }
+      finally { btn.disabled = false; }
+    };
+    document.getElementById("cancel-btn").onclick = async () => {
+      try { await api(`/api/orders/${order.id}/cancel`, { method: "POST" }); location.href = "/menu.html"; }
+      catch (e) { showMessage(payMsg, e.message, "error"); }
+    };
+
+    (async () => {
+      const id = new URLSearchParams(location.search).get("orderId");
+      if (id) {
+        try {
+          const o = await api("/api/orders/" + id);
+          if (o.status === "PendingPayment") showPay(o);
+          else { location.href = "/orders.html"; }
+        } catch (e) { showMessage(cartMsg, e.message, "error"); renderCart(); }
+      } else renderCart();
+    })();
+  </script>
+</body>
+</html>

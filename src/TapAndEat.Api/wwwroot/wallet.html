@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Wallet — Tap &amp; Eat</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body>
+  <div id="site-header"></div>
+  <main class="container">
+    <div class="card">
+      <h1>My wallet</h1>
+      <div class="row between">
+        <div><div class="muted">Balance</div><div class="token-badge" id="balance">…</div></div>
+        <div><div class="muted">RFID card</div><div id="card">—</div></div>
+        <div><div class="muted">Subsidy</div><div id="subsidy">—</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Top up</h2>
+      <form id="topup-form" class="stack" novalidate>
+        <div><label for="amount">Amount (৳)</label><input type="number" id="amount" min="1" step="0.01" placeholder="e.g. 500" /></div>
+        <div class="method-grid">
+          <label><input type="radio" name="method" value="bKash" checked /> bKash</label>
+          <label><input type="radio" name="method" value="Nagad" /> Nagad</label>
+        </div>
+        <div id="topup-msg" class="msg hidden"></div>
+        <button type="submit">Top up</button>
+      </form>
+    </div>
+    <div class="card">
+      <h2>Transactions</h2>
+      <table><thead><tr><th>When</th><th>Type</th><th>Description</th><th>Amount</th><th>Balance</th></tr></thead><tbody id="tx"></tbody></table>
+    </div>
+  </main>
+  <script src="/js/site.js"></script>
+  <script>
+    if (!requireAuth()) throw new Error("redirecting");
+    async function load() {
+      const w = await api("/api/wallet");
+      document.getElementById("balance").textContent = money(w.balance);
+      document.getElementById("card").textContent = w.rfidCardUid || "Not linked — ask an administrator to issue you a card";
+      document.getElementById("subsidy").textContent = w.subsidy && w.subsidy.isActive
+        ? `${money(w.subsidy.amount)} / ${w.subsidy.frequency.toLowerCase()}` : "None";
+      const txs = await api("/api/wallet/transactions");
+      document.getElementById("tx").innerHTML = txs.map(t => `<tr>
+        <td>${new Date(t.createdAtUtc).toLocaleString()}</td><td>${t.type}</td><td>${escapeHtml(t.description)}</td>
+        <td style="color:${t.amount < 0 ? "var(--color-danger)" : "var(--color-success)"}">${t.amount < 0 ? "−" : "+"}${money(Math.abs(t.amount))}</td>
+        <td>${money(t.balanceAfter)}</td></tr>`).join("") || '<tr><td colspan="5" class="muted">No transactions yet.</td></tr>';
+    }
+    let key = newIdempotencyKey();
+    document.getElementById("topup-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const msg = document.getElementById("topup-msg"); hideMessage(msg);
+      const amount = parseFloat(document.getElementById("amount").value);
+      if (!(amount > 0)) { showMessage(msg, "Enter an amount greater than zero.", "error"); return; }
+      try {
+        const p = await api("/api/wallet/topup", { method: "POST", headers: { "Idempotency-Key": key },
+          body: { amount, method: document.querySelector("input[name=method]:checked").value } });
+        if (p.redirectUrl) location.href = p.redirectUrl;
+        else { showMessage(msg, p.failureReason || "Could not start the top-up.", "error"); key = newIdempotencyKey(); }
+      } catch (err) { showMessage(msg, err.message, "error"); key = newIdempotencyKey(); }
+    });
+    load().catch(err => alert(err.message));
+  </script>
+</body>
+</html>
