@@ -15,5 +15,6 @@ internal static class MenuMapper
         item.StockCount,
         item.GetStockStatus().ToString(),
         item.IsPublished,
-        item.IsOverride);
+        item.IsOverride,
+        item.PrepTimeMinutes);
 }

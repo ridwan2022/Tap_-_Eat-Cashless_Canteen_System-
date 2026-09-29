@@ -12,7 +12,8 @@ public record MenuItemDto(
     int StockCount,
     string StockStatus,
     bool IsPublished,
-    bool IsOverride);
+    bool IsOverride,
+    int PrepTimeMinutes);
 
 public record CreateMenuItemRequest(
     [Required, StringLength(100)] string Name,
@@ -21,7 +22,8 @@ public record CreateMenuItemRequest(
     string Category,
     List<string>? DietaryTags,
     [Range(0, 100000)] int StockCount,
-    int LowStockThreshold = 5);
+    int LowStockThreshold = 5,
+    [Range(1, 240)] int? PrepTimeMinutes = null);
 
 public record UpdateMenuItemRequest(
     [Required, StringLength(100)] string Name,
@@ -30,7 +32,8 @@ public record UpdateMenuItemRequest(
     string Category,
     List<string>? DietaryTags,
     [Range(0, 100000)] int StockCount,
-    int LowStockThreshold = 5);
+    int LowStockThreshold = 5,
+    [Range(1, 240)] int? PrepTimeMinutes = null);
 
 public record OverrideMenuItemRequest(
     [Required, StringLength(100)] string Name,
@@ -38,6 +41,7 @@ public record OverrideMenuItemRequest(
     [Range(0, 100000)] decimal Price,
     string Category,
     List<string>? DietaryTags,
-    [Range(0, 100000)] int StockCount);
+    [Range(0, 100000)] int StockCount,
+    [Range(1, 240)] int? PrepTimeMinutes = null);
 
 public record StockUpdateNotification(Guid MenuItemId, string Name, int StockCount, string StockStatus);

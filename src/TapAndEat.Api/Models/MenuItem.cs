@@ -7,6 +7,11 @@ public enum StockStatus
     Out
 }
 
+/// <summary>
+/// Task 3.1 — menu item schema: name, dietary tags, price, and a live stock
+/// count that supports fast lookups by tag (see
+/// InMemoryMenuRepository.GetByTag).
+/// </summary>
 public class MenuItem
 {
     public Guid Id { get; init; } = Guid.NewGuid();
@@ -21,6 +26,9 @@ public class MenuItem
     public int LowStockThreshold { get; set; } = 5;
 
     public bool IsPublished { get; set; }
+
+    /// <summary>Sprint 2 (Task 7.2) — minutes the kitchen needs to make one portion; feeds the queue prep-time estimate.</summary>
+    public int PrepTimeMinutes { get; set; } = 5;
 
     /// <summary>
     /// True when this item is today's admin override of the standard menu
