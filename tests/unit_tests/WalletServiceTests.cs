@@ -1,7 +1,6 @@
 using Xunit;
 using FluentAssertions;
 using Moq;
-using Microsoft.Extensions.Time.Testing; // Requires Microsoft.Extensions.Time.Testing
 using TapAndEat.Api.Infrastructure;
 using TapAndEat.Api.Models;
 using TapAndEat.Api.Repositories;
@@ -13,7 +12,7 @@ public class WalletServiceTests
 {
     private readonly Mock<IWalletRepository> _walletsMock;
     private readonly Mock<IUserRepository> _usersMock;
-    private readonly FakeTimeProvider _timeProvider;
+    private readonly Mock<TimeProvider> _clockMock;
     private readonly DateTimeOffset _now = new(2026, 9, 20, 4, 0, 0, TimeSpan.Zero);
     private readonly Guid _userId;
     private readonly Wallet _wallet;
@@ -23,9 +22,8 @@ public class WalletServiceTests
     {
         _walletsMock = new Mock<IWalletRepository>();
         _usersMock = new Mock<IUserRepository>();
-        
-        // Using FakeTimeProvider (Official .NET 8+ testing standard)
-        _timeProvider = new FakeTimeProvider(_now);
+        _clockMock = new Mock<TimeProvider>();
+        _clockMock.Setup(c => c.GetUtcNow()).Returns(_now);
 
         _userId = Guid.NewGuid();
         _wallet = new Wallet 
@@ -37,7 +35,7 @@ public class WalletServiceTests
 
         _walletsMock.Setup(r => r.GetOrCreateAsync(_userId)).ReturnsAsync(_wallet);
 
-        _sut = new WalletService(_walletsMock.Object, _usersMock.Object, _timeProvider);
+        _sut = new WalletService(_walletsMock.Object, _usersMock.Object, _clockMock.Object);
     }
 
     // ============ GetWallet Tests ============
