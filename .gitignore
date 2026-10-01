@@ -17,4 +17,7 @@
 
 # ===== OS =====
 .DS_Store
-Thumbs.db.vscode/
+Thumbs.db
+
+# ===== VS Code =====
+.vscode/
