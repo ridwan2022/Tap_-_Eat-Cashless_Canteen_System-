@@ -33,14 +33,12 @@ public class MenuController : ControllerBase
     }
 
     /// <summary>
-    /// Task 3.4 demo/test hook — any authenticated user can adjust stock so the
-    /// real-time SignalR broadcast can be exercised without the ordering
-    /// feature (which lands in a later sprint). Restrict this to Admin/
-    /// KitchenStaff once ordering is implemented and stock is decremented
-    /// automatically by a paid order instead.
+    /// Task 3.4 — manual stock correction. Sprint 1 left this open to any
+    /// signed-in user as a demo hook; now that orders reserve stock
+    /// automatically (Sprint 2) it is restricted to kitchen staff and admins.
     /// </summary>
     [HttpPut("{id:guid}/stock")]
-    [Authorize]
+    [Authorize(Roles = "KitchenStaff,Admin")]
     public async Task<ActionResult<MenuItemDto>> SetStock(Guid id, [FromBody] int stockCount)
     {
         try
