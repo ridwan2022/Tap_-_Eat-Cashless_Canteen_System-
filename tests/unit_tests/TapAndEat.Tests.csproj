@@ -1,6 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -22,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\TapAndEat.Api\Tap_and_Eat.Api.csproj" />
+    <ProjectReference Include="..\..\src\TapAndEat.Api\TapAndEat.Api.csproj" />
   </ItemGroup>
 
 </Project>
