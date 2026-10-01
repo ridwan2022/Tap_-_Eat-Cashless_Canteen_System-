@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Menu — Tap &amp; Eat</title>
+  <title>Menu — Tap & Eat</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="/css/site.css" />
 </head>
@@ -64,11 +64,25 @@
             <span class="pill ${item.stockStatus.toLowerCase()}" data-role="stock-pill">${stockLabel(item.stockStatus)}</span>
             <span data-role="stock-count">${item.stockCount} left</span>
           </div>
+          ${item.stockCount > 0 ? `<button class="btn-add" data-add="${item.id}">Add to cart</button>` : ""}
         </div>
       `).join("");
 
       emptyMsg.classList.toggle("hidden", visible.length !== 0);
     }
+
+    // Sprint 2 — add to cart (checkout happens on /checkout.html).
+    grid.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-add]");
+      if (!btn) return;
+      if (!Auth.user()) { window.location.href = "/login.html"; return; }
+      const item = items.find(i => i.id === btn.dataset.add);
+      if (!item) return;
+      Cart.add(item);
+      renderNav();
+      btn.textContent = "Added ✓";
+      setTimeout(() => { btn.textContent = "Add to cart"; }, 900);
+    });
 
     function applyStockUpdate(update) {
       const item = items.find(i => i.id === update.menuItemId);
@@ -76,14 +90,7 @@
       item.stockCount = update.stockCount;
       item.stockStatus = update.stockStatus;
 
-      const card = grid.querySelector(`.menu-item[data-id="${update.menuItemId}"]`);
-      if (card) {
-        const pill = card.querySelector('[data-role="stock-pill"]');
-        const count = card.querySelector('[data-role="stock-count"]');
-        pill.className = "pill " + update.stockStatus.toLowerCase();
-        pill.textContent = stockLabel(update.stockStatus);
-        count.textContent = update.stockCount + " left";
-      }
+      renderGrid(); // re-render so the "Add to cart" button appears/disappears with stock
     }
 
     async function loadMenu() {
