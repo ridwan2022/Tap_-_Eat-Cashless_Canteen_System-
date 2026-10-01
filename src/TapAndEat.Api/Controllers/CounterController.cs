@@ -6,7 +6,11 @@ using TapAndEat.Api.Services;
 
 namespace TapAndEat.Api.Controllers;
 
-
+/// <summary>
+/// Tasks 6.2–6.3 — the meal-collection counter. Reachable only by kitchen
+/// staff/admins; a rejected tap is a normal, successful HTTP response whose
+/// body says <c>Outcome: Rejected</c> and why.
+/// </summary>
 [ApiController]
 [Route("api/counter")]
 [Authorize(Roles = Roles.Staff)]
