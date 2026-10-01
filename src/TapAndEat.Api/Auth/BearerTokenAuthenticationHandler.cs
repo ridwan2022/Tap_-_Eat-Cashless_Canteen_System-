@@ -37,19 +37,30 @@ public class BearerTokenAuthenticationHandler : AuthenticationHandler<BearerToke
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
-        if (!Request.Headers.TryGetValue("Authorization", out var authHeader))
+        string token;
+        if (Request.Headers.TryGetValue("Authorization", out var authHeader))
+        {
+            var headerValue = authHeader.ToString();
+            const string prefix = "Bearer ";
+            if (!headerValue.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            {
+                return Task.FromResult(AuthenticateResult.NoResult());
+            }
+            token = headerValue[prefix.Length..].Trim();
+        }
+        else if (Request.Path.StartsWithSegments("/api/stream")
+                 && Request.Query.TryGetValue("access_token", out var queryToken))
+        {
+            // Sprint 2 (Task 6.4): the browser's EventSource can't set an
+            // Authorization header, so the SSE stream endpoints (and only
+            // those) also accept the bearer token as ?access_token=.
+            token = queryToken.ToString().Trim();
+        }
+        else
         {
             return Task.FromResult(AuthenticateResult.NoResult());
         }
 
-        var headerValue = authHeader.ToString();
-        const string prefix = "Bearer ";
-        if (!headerValue.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-        {
-            return Task.FromResult(AuthenticateResult.NoResult());
-        }
-
-        var token = headerValue[prefix.Length..].Trim();
         var info = _tokenService.ValidateToken(token);
         if (info is null)
         {
