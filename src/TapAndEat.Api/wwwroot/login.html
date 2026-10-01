@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Log in — Tap &amp; Eat</title>
+  <title>Log in — Tap & Eat</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="/css/site.css" />
 </head>
@@ -68,7 +68,7 @@
           body: { email: emailInput.value.trim(), password: passwordInput.value }
         });
         Auth.save(result);
-        window.location.href = result.user.role === "Admin" ? "/admin.html" : "/menu.html";
+        window.location.href = result.user.role === "Admin" ? "/admin.html" : result.user.role === "KitchenStaff" ? "/kitchen.html" : "/menu.html";
       } catch (err) {
         showMessage(formMsg, err.message, "error");
       } finally {
