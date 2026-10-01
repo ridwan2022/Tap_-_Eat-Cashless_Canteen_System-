@@ -1,5 +1,6 @@
 namespace TapAndEat.Api.Models;
 
+
 public enum UserRole
 {
     Customer = 0,
