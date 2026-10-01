@@ -99,6 +99,7 @@ public class AdminService : IAdminService
             DietaryTags = NormalizeTags(request.DietaryTags),
             StockCount = request.StockCount,
             LowStockThreshold = request.LowStockThreshold,
+            PrepTimeMinutes = request.PrepTimeMinutes ?? 5,
             IsPublished = false
         };
         await _menu.AddAsync(item);
@@ -116,6 +117,7 @@ public class AdminService : IAdminService
         item.DietaryTags = NormalizeTags(request.DietaryTags);
         item.StockCount = request.StockCount;
         item.LowStockThreshold = request.LowStockThreshold;
+        if (request.PrepTimeMinutes is { } prep) item.PrepTimeMinutes = prep;
 
         await _menu.UpdateAsync(item);
         return MenuMapper.ToDto(item);
@@ -141,6 +143,7 @@ public class AdminService : IAdminService
         item.Category = string.IsNullOrWhiteSpace(request.Category) ? item.Category : request.Category.Trim();
         item.DietaryTags = NormalizeTags(request.DietaryTags);
         item.StockCount = request.StockCount;
+        if (request.PrepTimeMinutes is { } overridePrep) item.PrepTimeMinutes = overridePrep;
         item.IsOverride = true;
         item.IsPublished = true;
 
