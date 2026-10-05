@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+using TapAndEat.Api.DTOs;
 using TapAndEat.Api.Models;
 using TapAndEat.Api.Repositories;
 using TapAndEat.Api.Services;
@@ -102,7 +103,40 @@ public static class DbSeeder
             {
                 await menu.AddAsync(item);
             }
+
+            await SeedIngredientsAndRecipesAsync(services, sample);
         }
+    }
+
+    /// <summary>
+    /// Sprint 3 (Tasks 10.1/10.2) — a small ingredient set with recipes for
+    /// the seeded menu, including one ingredient seeded already at/under its
+    /// reorder threshold so the low-stock alert has something to show on a
+    /// fresh run.
+    /// </summary>
+    private static async Task SeedIngredientsAndRecipesAsync(IServiceProvider services, MenuItem[] sample)
+    {
+        var inventory = services.GetRequiredService<IInventoryService>();
+
+        var chicken = await inventory.CreateIngredientAsync(new CreateIngredientRequest("Chicken", "g", 20000, 3000));
+        var rice = await inventory.CreateIngredientAsync(new CreateIngredientRequest("Rice", "g", 30000, 4000));
+        var lentils = await inventory.CreateIngredientAsync(new CreateIngredientRequest("Lentils", "g", 1500, 2000)); // seeded low
+        var vegetables = await inventory.CreateIngredientAsync(new CreateIngredientRequest("Mixed Vegetables", "g", 10000, 1500));
+        var bread = await inventory.CreateIngredientAsync(new CreateIngredientRequest("Bread", "slices", 200, 40));
+        var cheese = await inventory.CreateIngredientAsync(new CreateIngredientRequest("Cheese", "g", 4000, 500));
+
+        var byName = sample.ToDictionary(i => i.Name);
+        async Task Recipe(string itemName, Guid ingredientId, decimal perItem) =>
+            await inventory.SetRecipeLineAsync(byName[itemName].Id, new SetRecipeLineRequest(ingredientId, perItem));
+
+        await Recipe("Chicken Biryani", chicken.Id, 180);
+        await Recipe("Chicken Biryani", rice.Id, 220);
+        await Recipe("Vegetable Khichuri", rice.Id, 180);
+        await Recipe("Vegetable Khichuri", lentils.Id, 90);
+        await Recipe("Vegetable Khichuri", vegetables.Id, 120);
+        await Recipe("Grilled Sandwich", bread.Id, 2);
+        await Recipe("Grilled Sandwich", cheese.Id, 40);
+        await Recipe("Grilled Sandwich", vegetables.Id, 60);
     }
 
     /// <summary>
