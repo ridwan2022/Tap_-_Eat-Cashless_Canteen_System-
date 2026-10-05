@@ -12,6 +12,7 @@
   <main class="container">
     <div class="row between"><h1>Kitchen board</h1><span class="muted" id="live">● connecting…</span></div>
     <p class="muted">Paid orders in queue order. Times are live estimates and update as the queue moves.</p>
+    <div id="low-stock" class="hidden"></div>
     <div id="msg" class="msg hidden"></div>
     <div id="board" class="board"></div>
     <p id="empty" class="muted hidden">No active orders. 🎉</p>
@@ -20,6 +21,16 @@
   <script>
     if (!requireStaff()) throw new Error("redirecting");
     const boardEl = document.getElementById("board");
+
+    // Sprint 3 (Task 10.3/10.4) — the KDS surfaces low ingredient stock right alongside incoming orders.
+    async function loadLowStock() {
+      const el = document.getElementById("low-stock");
+      try {
+        const low = await api("/api/kitchen/low-stock");
+        el.classList.toggle("hidden", low.length === 0);
+        if (low.length) el.innerHTML = `<div class="msg warn">⚠ Low stock: ${low.map(i => `${escapeHtml(i.name)} (${i.stockQuantity} ${escapeHtml(i.unit)})`).join(", ")}</div>`;
+      } catch { /* non-critical */ }
+    }
     async function load() {
       try {
         const b = await api("/api/kitchen/board");
@@ -42,6 +53,7 @@
       catch (err) { showMessage(document.getElementById("msg"), err.message, "error"); }
     });
     load();
+    loadLowStock(); setInterval(loadLowStock, 30000);
 
     // Live updates over Server-Sent Events (Task 6.4). EventSource can't set headers, so the token goes in the query string.
     const live = document.getElementById("live");
