@@ -128,6 +128,7 @@ function renderNav() {
     links.push(`<a href="/orders.html">My orders</a>`);
     links.push(`<a href="/wallet.html">Wallet</a>`);
   }
+  links.push(`<a href="/board.html">Token Board</a>`);
   if (Auth.isStaff()) {
     links.push(`<a href="/kitchen.html">Kitchen</a>`);
     links.push(`<a href="/counter.html">Counter</a>`);
@@ -135,6 +136,8 @@ function renderNav() {
   if (Auth.isAdmin()) {
     links.push(`<a href="/admin.html">Admin</a>`);
     links.push(`<a href="/admin-wallets.html">Wallets</a>`);
+    links.push(`<a href="/admin-inventory.html">Inventory</a>`);
+    links.push(`<a href="/admin-forecast.html">Forecast</a>`);
   }
 
   let rightSide;
