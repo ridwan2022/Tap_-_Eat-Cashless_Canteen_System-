@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Token Board — Tap &amp; Eat</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body>
+  <div id="site-header"></div>
+  <main class="container">
+    <div class="row between"><h1>Now serving</h1><span class="muted" id="live">● connecting…</span></div>
+    <div id="board" class="token-board"></div>
+    <p id="empty" class="muted hidden">No active orders right now.</p>
+  </main>
+  <script src="/js/site.js"></script>
+  <script>
+    // Task 8.3/8.4 — public display board: no login, no personal data, just token numbers and status.
+    async function load() {
+      const b = await fetch("/api/queue/board").then(r => r.json());
+      document.getElementById("empty").classList.toggle("hidden", b.tokens.length > 0);
+      document.getElementById("board").innerHTML = b.tokens.map(t => `
+        <div class="board-tile ${t.status.toLowerCase()}">
+          <div class="board-number">${escapeHtml(t.label)}</div>
+          <div class="board-status">${t.status === "Ready" ? "READY — please collect" : t.status}</div>
+        </div>`).join("");
+    }
+    load();
+    const live = document.getElementById("live");
+    const es = new EventSource("/api/stream/board"); // anonymous — no access_token needed
+    es.addEventListener("ready", () => { live.textContent = "● live"; });
+    es.addEventListener("token", load);
+    es.onerror = () => { live.textContent = "○ reconnecting…"; };
+    setInterval(load, 15000);
+  </script>
+</body>
+</html>
