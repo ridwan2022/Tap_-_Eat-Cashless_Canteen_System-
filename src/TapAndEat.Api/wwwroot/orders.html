@@ -32,6 +32,7 @@
             extra = `<div><span class="token-badge">${escapeHtml(t.label)}</span>
               <span class="pill ${t.status.toLowerCase()}">${t.status}</span>
               ${t.status === "Ready" ? "<b>— ready to collect!</b>" : "<span class='muted'>about " + t.remainingMinutes + " min</span>"}</div>
+              <div class="muted" data-position="${o.id}">Checking queue position…</div>
               <div class="muted">Tap your card at the counter · or show <code class="tok">${escapeHtml(o.paymentToken || "")}</code></div>`;
           }
           if (t && o.status === "Collected") extra = `<span class="muted">${escapeHtml(t.label)} collected</span>`;
@@ -41,8 +42,15 @@
             <div style="margin-top:10px;">${extra}</div></div>`;
         }).join("");
       } catch (e) { showMessage(document.getElementById("msg"), e.message, "error"); }
+      // Task 8.5 — fill in each visible order's live queue position.
+      document.querySelectorAll("[data-position]").forEach(async (el) => {
+        try {
+          const p = await api(`/api/queue/position/${el.dataset.position}`);
+          el.textContent = p.status === "Ready" ? "You're at the front — go collect!" : `Queue position: ${p.position} of ${p.totalActive}`;
+        } catch { el.textContent = ""; }
+      });
     }
-    load(); setInterval(load, 5000);   // live token status + estimate
+    load(); setInterval(load, 5000);   // live token status, position and estimate
   </script>
 </body>
 </html>
