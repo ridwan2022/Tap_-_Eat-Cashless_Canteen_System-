@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Demand forecast — Tap &amp; Eat</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body>
+  <div id="site-header"></div>
+  <main class="container">
+    <h1>Demand forecast</h1>
+    <p class="muted">Baseline model: trailing moving average of units sold per day (7-day window by default). Predicts tomorrow's demand for each published item.</p>
+    <div id="msg" class="msg hidden"></div>
+    <div id="cards"></div>
+  </main>
+  <script src="/js/site.js"></script>
+  <script>
+    if (!requireAdmin()) throw new Error("redirecting");
+    async function load() {
+      try {
+        const forecasts = await api("/api/admin/forecast");
+        document.getElementById("cards").innerHTML = forecasts.map(f => {
+          const max = Math.max(1, ...f.recentActuals.map(a => a.quantity), f.predictedQuantity);
+          const bars = f.recentActuals.map(a => `
+            <div class="bar-col">
+              <div class="bar" style="height:${Math.round((a.quantity / max) * 80)}px" title="${a.date}: ${a.quantity}"></div>
+              <div class="bar-label">${a.date.slice(5)}</div>
+            </div>`).join("");
+          return `<div class="card">
+            <div class="row between"><h2 style="margin:0;">${escapeHtml(f.menuItemName)}</h2>
+              <span class="token-badge" style="font-size:1.1rem;">≈ ${f.predictedQuantity} tomorrow</span></div>
+            <div class="muted">Based on ${f.sampleDays} day(s) with recorded sales in the last ${f.recentActuals.length}-day window.</div>
+            <div class="bar-chart">${bars}</div>
+          </div>`;
+        }).join("") || '<p class="muted">No published menu items yet.</p>';
+      } catch (e) { showMessage(document.getElementById("msg"), e.message, "error"); }
+    }
+    load();
+  </script>
+</body>
+</html>
