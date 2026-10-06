@@ -165,3 +165,16 @@ th { color: var(--color-muted); font-weight: 600; text-transform: uppercase; fon
 input.scan { font-size: 1.4rem; padding: 14px; letter-spacing: .08em; text-transform: uppercase; }
 code.tok { word-break: break-all; font-size: .75rem; }
 button.btn-add { padding: 6px 12px; margin-top: 8px; }
+
+/* ---------- Sprint 3 ---------- */
+.msg.warn { background: #fbf1dc; color: var(--color-warn); }
+.token-board { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; margin-top: 16px; }
+.board-tile { background: var(--color-surface); border: 3px solid var(--color-border); border-radius: var(--radius); padding: 22px 10px; text-align: center; }
+.board-tile.ready { border-color: var(--color-success); background: #e6f2e8; }
+.board-tile.preparing { border-color: var(--color-warn); }
+.board-number { font-size: 2.2rem; font-weight: 800; letter-spacing: .04em; }
+.board-status { margin-top: 6px; font-weight: 600; text-transform: uppercase; font-size: .8rem; letter-spacing: .05em; }
+.bar-chart { display: flex; align-items: flex-end; gap: 10px; height: 100px; margin-top: 14px; padding-top: 10px; }
+.bar-col { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; width: 32px; }
+.bar { width: 100%; background: var(--color-primary); border-radius: 4px 4px 0 0; min-height: 2px; }
+.bar-label { font-size: .65rem; color: var(--color-muted); margin-top: 4px; }
