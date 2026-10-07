@@ -21,3 +21,5 @@ Thumbs.db
 
 # ===== VS Code =====
 .vscode/
+App_Data/
+*.db
