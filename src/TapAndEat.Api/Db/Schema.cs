@@ -233,7 +233,54 @@ public static class Schema
                 generated_at INTEGER NOT NULL
             )
             """,
-            "CREATE UNIQUE INDEX IF NOT EXISTS ix_forecasts_item_date ON demand_forecasts (menu_item_id, forecast_date)"
+            "CREATE UNIQUE INDEX IF NOT EXISTS ix_forecasts_item_date ON demand_forecasts (menu_item_id, forecast_date)",
+
+            // ---- Sprint 4: notifications & feedback ----
+            """
+            CREATE TABLE IF NOT EXISTS notifications (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL REFERENCES users(id),
+                type TEXT NOT NULL,
+                channel TEXT NOT NULL DEFAULT 'InApp',
+                title TEXT NOT NULL,
+                message TEXT NOT NULL,
+                reference_id TEXT NULL,
+                is_read INTEGER NOT NULL DEFAULT 0,
+                created_at INTEGER NOT NULL,
+                read_at INTEGER NULL
+            )
+            """,
+            "CREATE INDEX IF NOT EXISTS ix_notifications_user_read ON notifications (user_id, is_read)",
+            "CREATE INDEX IF NOT EXISTS ix_notifications_user_created ON notifications (user_id, created_at DESC)",
+
+            """
+            CREATE TABLE IF NOT EXISTS push_subscriptions (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL REFERENCES users(id),
+                endpoint TEXT NOT NULL,
+                p256dh TEXT NULL,
+                auth TEXT NULL,
+                created_at INTEGER NOT NULL
+            )
+            """,
+            "CREATE UNIQUE INDEX IF NOT EXISTS ix_push_subs_user_endpoint ON push_subscriptions (user_id, endpoint)",
+
+            """
+            CREATE TABLE IF NOT EXISTS order_feedbacks (
+                id TEXT PRIMARY KEY,
+                order_id TEXT NOT NULL REFERENCES orders(id),
+                user_id TEXT NOT NULL REFERENCES users(id),
+                user_name TEXT NOT NULL DEFAULT '',
+                rating INTEGER NOT NULL,
+                comment TEXT NOT NULL DEFAULT '',
+                menu_item_id TEXT NULL REFERENCES menu_items(id),
+                created_at INTEGER NOT NULL,
+                updated_at INTEGER NOT NULL
+            )
+            """,
+            "CREATE UNIQUE INDEX IF NOT EXISTS ix_feedbacks_order ON order_feedbacks (order_id)",
+            "CREATE INDEX IF NOT EXISTS ix_feedbacks_user ON order_feedbacks (user_id)",
+            "CREATE INDEX IF NOT EXISTS ix_feedbacks_item ON order_feedbacks (menu_item_id)"
         };
 
         foreach (var sql in statements)
