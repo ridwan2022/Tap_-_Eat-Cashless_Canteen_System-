@@ -3,54 +3,234 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>My orders — Tap &amp; Eat</title>
+  <title>My Orders & History — Tap &amp; Eat</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="/css/site.css" />
 </head>
 <body>
   <div id="site-header"></div>
-  <main class="container">
-    <h1>My orders</h1>
-    <div id="msg" class="msg hidden"></div>
-    <div id="list"></div>
-    <p id="empty" class="muted hidden">No orders yet. <a href="/menu.html">Browse the menu</a>.</p>
+  <main id="main-content" class="container" role="main">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h1 data-i18n="history_title">Order History & Entitlements</h1>
+    </div>
+
+    <!-- Filter Bar (Tasks 12.1, 12.2) -->
+    <section class="filter-bar" aria-label="Order filters">
+      <div>
+        <label for="filter-status" style="font-size:0.85rem; font-weight:600;" data-i18n="history_filter_all">Status</label><br />
+        <select id="filter-status" style="padding:6px 10px; border-radius:6px; border:1px solid var(--color-border);">
+          <option value="">All Statuses</option>
+          <option value="Paid">Paid</option>
+          <option value="Collected">Collected</option>
+          <option value="PendingPayment">Pending Payment</option>
+          <option value="Cancelled">Cancelled</option>
+        </select>
+      </div>
+      <div>
+        <label for="filter-from" style="font-size:0.85rem; font-weight:600;" data-i18n="history_date_from">From Date</label><br />
+        <input type="date" id="filter-from" style="padding:5px 8px; border-radius:6px; border:1px solid var(--color-border);" />
+      </div>
+      <div>
+        <label for="filter-to" style="font-size:0.85rem; font-weight:600;" data-i18n="history_date_to">To Date</label><br />
+        <input type="date" id="filter-to" style="padding:5px 8px; border-radius:6px; border:1px solid var(--color-border);" />
+      </div>
+      <div style="align-self:flex-end;">
+        <button id="filter-btn" class="btn" style="padding:7px 16px;" data-i18n="history_filter_btn">Filter</button>
+      </div>
+    </section>
+
+    <!-- Summary Banner -->
+    <div id="summary-banner" class="msg info hidden" style="margin-bottom:14px;"></div>
+
+    <div id="msg" class="msg hidden" role="alert"></div>
+    <div id="list" role="feed" aria-label="Orders list"></div>
+    <p id="empty" class="muted hidden">No orders match your filter. <a href="/menu.html">Browse the menu</a>.</p>
+
+    <!-- Pagination Controls (Task 12.2) -->
+    <nav class="pagination-controls" aria-label="Pagination Navigation">
+      <button id="prev-page-btn" class="btn" style="padding:6px 14px;" disabled>&larr; Previous</button>
+      <span id="page-indicator" style="font-weight:600;">Page 1 of 1</span>
+      <button id="next-page-btn" class="btn" style="padding:6px 14px;" disabled>Next &rarr;</button>
+    </nav>
   </main>
+
+  <script src="/js/i18n.js"></script>
   <script src="/js/site.js"></script>
   <script>
-    if (!requireAuth()) throw new Error("redirecting");
+    if (!requireCustomer()) throw new Error("redirecting");
+
+    let currentPage = 1;
+    const pageSize = 5;
+    let totalPages = 1;
+
     const list = document.getElementById("list");
-    async function load() {
+    const statusFilter = document.getElementById("filter-status");
+    const fromFilter = document.getElementById("filter-from");
+    const toFilter = document.getElementById("filter-to");
+    const filterBtn = document.getElementById("filter-btn");
+    const prevBtn = document.getElementById("prev-page-btn");
+    const nextBtn = document.getElementById("next-page-btn");
+    const pageIndicator = document.getElementById("page-indicator");
+    const summaryBanner = document.getElementById("summary-banner");
+
+    filterBtn.addEventListener("click", () => {
+      currentPage = 1;
+      loadOrders();
+    });
+
+    prevBtn.addEventListener("click", () => {
+      if (currentPage > 1) {
+        currentPage--;
+        loadOrders();
+      }
+    });
+
+    nextBtn.addEventListener("click", () => {
+      if (currentPage < totalPages) {
+        currentPage++;
+        loadOrders();
+      }
+    });
+
+    async function loadOrders() {
       try {
-        const orders = await api("/api/orders/mine");
+        const params = new URLSearchParams();
+        params.set("page", currentPage);
+        params.set("pageSize", pageSize);
+        if (statusFilter.value) params.set("status", statusFilter.value);
+        if (fromFilter.value) params.set("from", new Date(fromFilter.value).toISOString());
+        if (toFilter.value) {
+          const toDate = new Date(toFilter.value);
+          toDate.setHours(23, 59, 59, 999);
+          params.set("to", toDate.toISOString());
+        }
+
+        const data = await api(`/api/orders/history?${params.toString()}`);
+        totalPages = Math.max(1, data.totalPages);
+        pageIndicator.textContent = `Page ${data.page} of ${totalPages} (${data.totalCount} orders)`;
+        prevBtn.disabled = currentPage <= 1;
+        nextBtn.disabled = currentPage >= totalPages;
+
+        if (data.totalSpent > 0) {
+          summaryBanner.innerHTML = `<strong>Total Spent for this selection:</strong> ${money(data.totalSpent)}`;
+          summaryBanner.classList.remove("hidden");
+        } else {
+          summaryBanner.classList.add("hidden");
+        }
+
+        const orders = data.items || [];
         document.getElementById("empty").classList.toggle("hidden", orders.length > 0);
+
         list.innerHTML = orders.map(o => {
           const t = o.token;
           const items = o.lines.map(l => `${l.quantity}× ${escapeHtml(l.name)}`).join(", ");
           let extra = "";
-          if (o.status === "PendingPayment") extra = `<a class="btn" href="/checkout.html?orderId=${o.id}">Pay now</a>`;
-          if (t && o.status === "Paid") {
+
+          if (o.status === "PendingPayment") {
+            extra = `<a class="btn" href="/checkout.html?orderId=${o.id}">Pay now</a>`;
+          } else if (t && o.status === "Paid") {
             extra = `<div><span class="token-badge">${escapeHtml(t.label)}</span>
               <span class="pill ${t.status.toLowerCase()}">${t.status}</span>
               ${t.status === "Ready" ? "<b>— ready to collect!</b>" : "<span class='muted'>about " + t.remainingMinutes + " min</span>"}</div>
               <div class="muted" data-position="${o.id}">Checking queue position…</div>
               <div class="muted">Tap your card at the counter · or show <code class="tok">${escapeHtml(o.paymentToken || "")}</code></div>`;
+          } else if (o.status === "Collected") {
+            extra = `<div><span class="muted">${t ? escapeHtml(t.label) + ' ' : ''}collected</span></div>
+                     <div class="feedback-box" data-order-feedback="${o.id}" style="margin-top:8px;">
+                       <button class="btn rate-btn" data-order-id="${o.id}" style="padding:4px 10px; font-size:0.85rem;">⭐ Rate Meal</button>
+                     </div>`;
           }
-          if (t && o.status === "Collected") extra = `<span class="muted">${escapeHtml(t.label)} collected</span>`;
-          return `<div class="card">
+
+          return `<article class="card" aria-label="Order from ${new Date(o.createdAtUtc).toLocaleDateString()}">
             <div class="row between"><strong>${money(o.total)}</strong><span class="pill ${o.status.toLowerCase()}">${o.status}</span></div>
             <div class="muted">${items} · ${new Date(o.createdAtUtc).toLocaleString()}</div>
-            <div style="margin-top:10px;">${extra}</div></div>`;
+            <div style="margin-top:10px;">${extra}</div>
+          </article>`;
         }).join("");
-      } catch (e) { showMessage(document.getElementById("msg"), e.message, "error"); }
-      // Task 8.5 — fill in each visible order's live queue position.
-      document.querySelectorAll("[data-position]").forEach(async (el) => {
-        try {
-          const p = await api(`/api/queue/position/${el.dataset.position}`);
-          el.textContent = p.status === "Ready" ? "You're at the front — go collect!" : `Queue position: ${p.position} of ${p.totalActive}`;
-        } catch { el.textContent = ""; }
+
+        // Attach queue positions
+        document.querySelectorAll("[data-position]").forEach(async (el) => {
+          try {
+            const p = await api(`/api/queue/position/${el.dataset.position}`);
+            el.textContent = p.status === "Ready" ? "You're at the front — go collect!" : `Queue position: ${p.position} of ${p.totalActive}`;
+          } catch { el.textContent = ""; }
+        });
+
+        // Attach feedback widget logic (Tasks 13.1, 13.3)
+        attachFeedbackButtons();
+
+      } catch (e) {
+        showMessage(document.getElementById("msg"), e.message, "error");
+      }
+    }
+
+    function attachFeedbackButtons() {
+      document.querySelectorAll(".rate-btn").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const orderId = btn.dataset.orderId;
+          const container = document.querySelector(`[data-order-feedback="${orderId}"]`);
+          if (!container) return;
+
+          // Check if feedback already exists
+          let existingRating = 5;
+          let existingComment = "";
+          try {
+            const existing = await api(`/api/feedback/order/${orderId}`);
+            if (existing) {
+              existingRating = existing.rating;
+              existingComment = existing.comment || "";
+            }
+          } catch { /* none */ }
+
+          container.innerHTML = `
+            <div style="background:#fcfaf7; border:1px solid var(--color-border); border-radius:8px; padding:10px; margin-top:6px;">
+              <div style="font-weight:600; margin-bottom:4px;">Rate your meal:</div>
+              <div class="star-rating" id="stars-${orderId}" role="radiogroup" aria-label="Star Rating">
+                ${[1,2,3,4,5].map(star => `
+                  <button type="button" class="star-btn" data-star="${star}" aria-label="${star} stars" style="background:none; border:none; cursor:pointer; font-size:1.4rem; padding:0 2px; color:${star <= existingRating ? '#f59e0b' : '#d1d5db'};">★</button>
+                `).join("")}
+              </div>
+              <input type="text" id="comment-${orderId}" value="${escapeHtml(existingComment)}" placeholder="Optional feedback comment..." style="width:100%; margin-top:6px; padding:6px; border-radius:4px; border:1px solid var(--color-border);" />
+              <div style="margin-top:6px; display:flex; gap:8px;">
+                <button class="btn submit-feedback-btn" data-order-id="${orderId}" style="padding:4px 12px; font-size:0.85rem;">Submit Review</button>
+                <button class="btn cancel-feedback-btn" data-order-id="${orderId}" style="padding:4px 10px; font-size:0.85rem; background:transparent; color:var(--color-muted); border:1px solid var(--color-border);">Cancel</button>
+              </div>
+            </div>`;
+
+          let selectedRating = existingRating;
+          const starContainer = document.getElementById(`stars-${orderId}`);
+          starContainer.querySelectorAll(".star-btn").forEach(sBtn => {
+            sBtn.addEventListener("click", () => {
+              selectedRating = parseInt(sBtn.dataset.star, 10);
+              starContainer.querySelectorAll(".star-btn").forEach(sb => {
+                const sVal = parseInt(sb.dataset.star, 10);
+                sb.style.color = sVal <= selectedRating ? "#f59e0b" : "#d1d5db";
+              });
+            });
+          });
+
+          container.querySelector(".submit-feedback-btn").addEventListener("click", async () => {
+            const commentVal = document.getElementById(`comment-${orderId}`).value;
+            try {
+              await api("/api/feedback", {
+                method: "POST",
+                body: { orderId, rating: selectedRating, comment: commentVal }
+              });
+              container.innerHTML = `<span style="color:var(--color-success); font-weight:600;">✓ Rated ${selectedRating}★: "${escapeHtml(commentVal || 'Great')}"</span>`;
+            } catch (err) {
+              alert(err.message);
+            }
+          });
+
+          container.querySelector(".cancel-feedback-btn").addEventListener("click", () => {
+            container.innerHTML = `<button class="btn rate-btn" data-order-id="${orderId}" style="padding:4px 10px; font-size:0.85rem;">⭐ Rate Meal</button>`;
+            attachFeedbackButtons();
+          });
+        });
       });
     }
-    load(); setInterval(load, 5000);   // live token status, position and estimate
+
+    loadOrders();
   </script>
 </body>
 </html>
