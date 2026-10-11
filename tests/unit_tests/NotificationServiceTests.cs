@@ -181,4 +181,103 @@ public class NotificationServiceTests
     private sealed class Fixture
     {
         public IUserRepository Users { get; } = new InMemoryUserRepository();
-        public IMenu
+        public IMenuRepository Menu { get; } = new InMemoryMenuRepository();
+        public IOrderRepository Orders { get; } = new InMemoryOrderRepository();
+        public IPaymentRepository Payments { get; } = new InMemoryPaymentRepository();
+        public IWalletRepository Wallets { get; } = new InMemoryWalletRepository();
+        public IQueueTokenRepository QueueTokens { get; } = new InMemoryQueueTokenRepository();
+        public INotificationRepository Notifications { get; } = new InMemoryNotificationRepository();
+        public IIngredientRepository Ingredients { get; } = new InMemoryIngredientRepository();
+        public IEventBroadcaster Events { get; } = new EventBroadcaster();
+        public FakeClock Clock { get; } = new FakeClock();
+
+        public INotificationService NotificationService { get; }
+        public IOrderService OrderService { get; }
+        public ISubsidyService SubsidyService { get; }
+        public IInventoryService InventoryService { get; }
+        public IWalletService WalletService { get; }
+
+        public Fixture()
+        {
+            NotificationService = new NotificationService(
+                Notifications, Users, Orders, QueueTokens, Events, Clock, NullLogger<NotificationService>.Instance);
+
+            var menuService = new MenuService(Menu, new NullHubContext());
+            var paymentTokens = new PaymentTokenService(Options.Create(new PaymentOptions { TokenSecret = "test-secret" }));
+            
+            var queue = new QueueService(
+                QueueTokens, Orders, Events,
+                Options.Create(new KitchenOptions { Stations = 2 }),
+                Options.Create(new BusinessOptions()), Clock);
+
+            OrderService = new OrderService(
+                Orders, Menu, menuService, queue, paymentTokens,
+                Options.Create(new OrderOptions { PaymentWindowMinutes = 15 }), Clock, null, NotificationService);
+
+            WalletService = new WalletService(Wallets, Users, Clock);
+            
+            SubsidyService = new SubsidyService(
+                Wallets, WalletService, Users, Options.Create(new BusinessOptions()), Clock);
+                
+            InventoryService = new InventoryService(Ingredients, Menu, NullLogger<InventoryService>.Instance, NotificationService);
+        }
+
+        public async Task<User> AddUserAsync(string name = "Test User", UserRole role = UserRole.Customer)
+        {
+            var user = new User { FullName = name, Email = Guid.NewGuid().ToString("N") + "@example.com", Role = role };
+            await Users.AddAsync(user);
+            return user;
+        }
+
+        public async Task<MenuItem> AddMenuItemAsync(string name = "Biryani", decimal price = 100m, int stock = 20)
+        {
+            var item = new MenuItem { Name = name, Price = price, StockCount = stock, PrepTimeMinutes = 5, IsPublished = true };
+            await Menu.AddAsync(item);
+            return item;
+        }
+
+        public async Task<Ingredient> AddIngredientAsync(string name, decimal stock, decimal threshold)
+        {
+            var i = new Ingredient { Name = name, Unit = "g", StockQuantity = stock, ReorderThreshold = threshold };
+            await Ingredients.AddAsync(i);
+            return i;
+        }
+    }
+
+    public sealed class NullHubContext : Microsoft.AspNetCore.SignalR.IHubContext<MenuHub>
+    {
+        public Microsoft.AspNetCore.SignalR.IHubClients Clients { get; } = new NullClients();
+        public Microsoft.AspNetCore.SignalR.IGroupManager Groups { get; } = new NullGroups();
+
+        private sealed class NullClients : Microsoft.AspNetCore.SignalR.IHubClients
+        {
+            private readonly Microsoft.AspNetCore.SignalR.IClientProxy _p = new NullProxy();
+            public Microsoft.AspNetCore.SignalR.IClientProxy All => _p;
+            public Microsoft.AspNetCore.SignalR.IClientProxy AllExcept(IReadOnlyList<string> ids) => _p;
+            public Microsoft.AspNetCore.SignalR.IClientProxy Client(string id) => _p;
+            public Microsoft.AspNetCore.SignalR.IClientProxy Clients(IReadOnlyList<string> ids) => _p;
+            public Microsoft.AspNetCore.SignalR.IClientProxy Group(string name) => _p;
+            public Microsoft.AspNetCore.SignalR.IClientProxy GroupExcept(string name, IReadOnlyList<string> ids) => _p;
+            public Microsoft.AspNetCore.SignalR.IClientProxy Groups(IReadOnlyList<string> names) => _p;
+            public Microsoft.AspNetCore.SignalR.IClientProxy User(string id) => _p;
+            public Microsoft.AspNetCore.SignalR.IClientProxy Users(IReadOnlyList<string> ids) => _p;
+        }
+
+        private sealed class NullProxy : Microsoft.AspNetCore.SignalR.IClientProxy
+        {
+            public Task SendCoreAsync(string method, object?[] args, CancellationToken ct = default) => Task.CompletedTask;
+        }
+
+        private sealed class NullGroups : Microsoft.AspNetCore.SignalR.IGroupManager
+        {
+            public Task AddToGroupAsync(string connectionId, string groupName, CancellationToken ct = default) => Task.CompletedTask;
+            public Task RemoveFromGroupAsync(string connectionId, string groupName, CancellationToken ct = default) => Task.CompletedTask;
+        }
+    }
+
+    public sealed class FakeClock : TimeProvider
+    {
+        public DateTimeOffset UtcNow { get; set; } = DateTimeOffset.UtcNow;
+        public override DateTimeOffset GetUtcNow() => UtcNow;
+    }
+}
