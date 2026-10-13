@@ -178,3 +178,142 @@ button.btn-add { padding: 6px 12px; margin-top: 8px; }
 .bar-col { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; width: 32px; }
 .bar { width: 100%; background: var(--color-primary); border-radius: 4px 4px 0 0; min-height: 2px; }
 .bar-label { font-size: .65rem; color: var(--color-muted); margin-top: 4px; }
+
+/* ---------- Sprint 4: Accessibility, Notifications, Feedback, i18n ---------- */
+:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.skip-link {
+  position: absolute;
+  top: -60px;
+  left: 10px;
+  background: var(--color-primary-dark);
+  color: #fff;
+  padding: 8px 14px;
+  z-index: 9999;
+  border-radius: var(--radius);
+  font-weight: bold;
+  text-decoration: none;
+  transition: top 0.2s ease;
+}
+.skip-link:focus {
+  top: 10px;
+}
+
+/* Language switch button */
+.lang-btn {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 20px;
+  padding: 4px 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.lang-btn:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+/* Notification bell & badge */
+.notif-bell-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.notif-bell-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 4px;
+  color: inherit;
+  position: relative;
+}
+.notif-badge {
+  position: absolute;
+  top: -2px;
+  right: -6px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: bold;
+  padding: 1px 5px;
+  border-radius: 10px;
+  min-width: 16px;
+  text-align: center;
+}
+.notif-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 340px;
+  max-height: 420px;
+  overflow-y: auto;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+  z-index: 1000;
+  color: var(--color-text);
+  padding: 12px;
+}
+.notif-item {
+  border-bottom: 1px solid var(--color-border);
+  padding: 8px 4px;
+  font-size: 0.85rem;
+}
+.notif-item.unread {
+  background: #fdf6ec;
+  font-weight: 500;
+}
+.notif-item:last-child {
+  border-bottom: none;
+}
+.notif-time {
+  font-size: 0.75rem;
+  color: var(--color-muted);
+}
+
+/* Star rating widget */
+.star-rating {
+  display: inline-flex;
+  gap: 4px;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+.star-rating span {
+  color: #d1d5db;
+  transition: color 0.15s ease;
+}
+.star-rating span.active,
+.star-rating span:hover,
+.star-rating span:hover ~ span {
+  color: #f59e0b;
+}
+
+/* History & Filters */
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  background: #fdfaf6;
+  padding: 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+  margin-bottom: 16px;
+}
+.pagination-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+  padding: 8px 0;
+}
+
