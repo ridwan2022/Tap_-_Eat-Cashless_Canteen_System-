@@ -35,4 +35,10 @@ public interface IWalletService
 
     /// <summary>Admin view of every user's wallet, card and subsidy.</summary>
     Task<IReadOnlyList<AdminWalletDto>> GetAllForAdminAsync();
+
+    /// <summary>Task 12.3 — subsidy usage summary and balance reconciliation for a period.</summary>
+    Task<SubsidySummaryDto> GetSubsidySummaryAsync(Guid userId, string? period = null, DateTimeOffset? from = null, DateTimeOffset? to = null);
+
+    /// <summary>Task 12.3 — admin subsidy report reconciling company-wide subsidies.</summary>
+    Task<AdminSubsidyReportDto> GetAdminSubsidyReportAsync(DateTimeOffset? from = null, DateTimeOffset? to = null);
 }

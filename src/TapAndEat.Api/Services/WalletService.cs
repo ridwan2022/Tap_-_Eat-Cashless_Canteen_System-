@@ -162,4 +162,87 @@ public class WalletService : IWalletService
 
     private static WalletTransactionDto ToDto(WalletTransaction t) =>
         new(t.Id, t.Type.ToString(), t.Amount, t.BalanceAfter, t.Description, t.CreatedAtUtc);
+
+    public async Task<SubsidySummaryDto> GetSubsidySummaryAsync(
+        Guid userId, string? period = null, DateTimeOffset? from = null, DateTimeOffset? to = null)
+    {
+        var wallet = await _wallets.GetOrCreateAsync(userId);
+        var allTx = await _wallets.GetTransactionsAsync(wallet.Id);
+
+        var now = _clock.GetUtcNow();
+        DateTimeOffset fromUtc;
+        DateTimeOffset toUtc = to ?? now;
+
+        if (from.HasValue)
+        {
+            fromUtc = from.Value;
+        }
+        else
+        {
+            fromUtc = (period?.ToLowerInvariant()) switch
+            {
+                "week" => now.AddDays(-7),
+                "all" => DateTimeOffset.MinValue,
+                _ => new DateTimeOffset(now.Year, now.Month, 1, 0, 0, 0, TimeSpan.Zero) // current month
+            };
+        }
+
+        var periodKey = period ?? "month";
+        var filteredTx = allTx.Where(t => t.CreatedAtUtc >= fromUtc && t.CreatedAtUtc <= toUtc).ToList();
+
+        var totalCredited = filteredTx
+            .Where(t => t.Type == WalletTransactionType.SubsidyCredit)
+            .Sum(t => t.Amount);
+
+        var totalSpent = filteredTx
+            .Where(t => t.Type == WalletTransactionType.Purchase)
+            .Sum(t => Math.Abs(t.Amount));
+
+        var orderCount = filteredTx.Count(t => t.Type == WalletTransactionType.Purchase);
+
+        return new SubsidySummaryDto(
+            userId,
+            periodKey,
+            fromUtc,
+            toUtc,
+            totalCredited,
+            totalSpent,
+            wallet.Balance,
+            orderCount,
+            filteredTx.Select(ToDto).ToList());
+    }
+
+    public async Task<AdminSubsidyReportDto> GetAdminSubsidyReportAsync(DateTimeOffset? from = null, DateTimeOffset? to = null)
+    {
+        var now = _clock.GetUtcNow();
+        var fromUtc = from ?? new DateTimeOffset(now.Year, now.Month, 1, 0, 0, 0, TimeSpan.Zero);
+        var toUtc = to ?? now;
+
+        var allWallets = await _wallets.GetAllAsync();
+        var userSummaries = new List<SubsidySummaryDto>();
+
+        decimal totalCompanyCredited = 0;
+        decimal totalCompanySpent = 0;
+        var activeWithSubsidy = 0;
+
+        foreach (var w in allWallets)
+        {
+            var schedule = await _wallets.GetScheduleAsync(w.UserId);
+            if (schedule is not null && schedule.IsActive)
+            {
+                activeWithSubsidy++;
+            }
+
+            var summary = await GetSubsidySummaryAsync(w.UserId, "custom", fromUtc, toUtc);
+            if (summary.TotalCredited > 0 || summary.TotalSpent > 0 || (schedule is not null && schedule.IsActive))
+            {
+                userSummaries.Add(summary);
+                totalCompanyCredited += summary.TotalCredited;
+                totalCompanySpent += summary.TotalSpent;
+            }
+        }
+
+        return new AdminSubsidyReportDto(
+            fromUtc, toUtc, totalCompanyCredited, totalCompanySpent, activeWithSubsidy, userSummaries);
+    }
 }
