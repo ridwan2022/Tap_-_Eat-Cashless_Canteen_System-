@@ -9,7 +9,7 @@ namespace TapAndEat.Api.Controllers;
 
 [ApiController]
 [Route("api/wallet")]
-[Authorize]
+[Authorize(Roles = nameof(UserRole.Customer))]
 public class WalletController : ControllerBase
 {
     private readonly IWalletService _wallets;
@@ -49,6 +49,17 @@ public class WalletController : ControllerBase
             return Ok(await _payments.InitiateTopUpAsync(
                 this.CurrentUserId(), request.Amount, method, idempotencyKey, this.BaseUrl(), ct));
         }
+        catch (AppException ex) { return ex.ToActionResult(); }
+    }
+
+    /// <summary>Task 12.3 — subsidy usage summary and balance reconciliation for a period.</summary>
+    [HttpGet("subsidy-summary")]
+    public async Task<ActionResult<SubsidySummaryDto>> SubsidySummary(
+        [FromQuery] string? period = null,
+        [FromQuery] DateTimeOffset? from = null,
+        [FromQuery] DateTimeOffset? to = null)
+    {
+        try { return Ok(await _wallets.GetSubsidySummaryAsync(this.CurrentUserId(), period, from, to)); }
         catch (AppException ex) { return ex.ToActionResult(); }
     }
 }
