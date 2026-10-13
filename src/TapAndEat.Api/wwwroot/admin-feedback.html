@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Customer Satisfaction & Feedback — Tap &amp; Eat</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body>
+  <div id="site-header"></div>
+  <main id="main-content" class="container" role="main">
+    <h1 data-i18n="feedback_admin_dashboard">Quality & Customer Satisfaction</h1>
+    <div id="msg" class="msg hidden" role="alert"></div>
+
+    <!-- Overview Metrics (Task 13.4) -->
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:16px; margin-bottom:16px;">
+      <div class="card" style="text-align:center; padding:20px;">
+        <div class="muted" data-i18n="feedback_overall_avg">Overall Satisfaction</div>
+        <div id="overall-avg" style="font-size:3rem; font-weight:800; color:#f59e0b; margin:8px 0;">—</div>
+        <div id="stars-visual" style="font-size:1.5rem; color:#f59e0b;">★★★★★</div>
+      </div>
+      <div class="card" style="text-align:center; padding:20px;">
+        <div class="muted" data-i18n="feedback_total_reviews">Total Reviews</div>
+        <div id="total-reviews" style="font-size:3rem; font-weight:800; color:var(--color-primary); margin:8px 0;">0</div>
+        <div class="muted">Verified Completed Orders</div>
+      </div>
+    </div>
+
+    <!-- Rating Distribution (Task 13.4) -->
+    <div class="card">
+      <h2>Rating Breakdown</h2>
+      <div id="star-breakdown" style="display:flex; flex-direction:column; gap:8px; margin-top:12px;"></div>
+    </div>
+
+    <!-- Dish Satisfaction Table (Task 13.4) -->
+    <div class="card">
+      <h2 data-i18n="feedback_dish_ratings">Satisfaction By Dish</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Dish Name</th>
+            <th>Avg Rating</th>
+            <th>Total Reviews</th>
+          </tr>
+        </thead>
+        <tbody id="dishes-tbody"></tbody>
+      </table>
+    </div>
+
+    <!-- Recent Comments (Task 13.4) -->
+    <div class="card">
+      <h2 data-i18n="feedback_recent_comments">Recent Customer Comments</h2>
+      <div id="comments-list" style="display:flex; flex-direction:column; gap:10px; margin-top:12px;"></div>
+    </div>
+  </main>
+
+  <script src="/js/i18n.js"></script>
+  <script src="/js/site.js"></script>
+  <script>
+    if (!requireAdmin()) throw new Error("redirecting");
+
+    async function load() {
+      try {
+        const data = await api("/api/feedback/summary");
+        document.getElementById("overall-avg").textContent = data.averageRating > 0 ? data.averageRating.toFixed(1) + " / 5.0" : "N/A";
+        document.getElementById("total-reviews").textContent = String(data.totalReviews);
+
+        // Visual stars
+        const rounded = Math.round(data.averageRating);
+        let starStr = "";
+        for (let i = 1; i <= 5; i++) starStr += (i <= rounded ? "★" : "☆");
+        document.getElementById("stars-visual").textContent = starStr;
+
+        // Breakdown bars
+        const total = data.totalReviews || 1;
+        const bd = document.getElementById("star-breakdown");
+        bd.innerHTML = [5, 4, 3, 2, 1].map(stars => {
+          const count = data.starCounts[stars] || 0;
+          const pct = Math.round((count / total) * 100);
+          return `
+            <div style="display:flex; align-items:center; gap:10px;">
+              <span style="width:50px; font-weight:600;">${stars} ★</span>
+              <div style="flex:1; background:#e5e7eb; border-radius:6px; height:14px; overflow:hidden;">
+                <div style="background:#f59e0b; width:${pct}%; height:100%;"></div>
+              </div>
+              <span style="width:60px; font-size:0.85rem; color:var(--color-muted); text-align:right;">${count} (${pct}%)</span>
+            </div>`;
+        }).join("");
+
+        // Dish table
+        const tbody = document.getElementById("dishes-tbody");
+        if (data.itemRatings && data.itemRatings.length > 0) {
+          tbody.innerHTML = data.itemRatings.map(d => `
+            <tr>
+              <td><strong>${escapeHtml(d.menuItemName)}</strong></td>
+              <td><span style="color:#f59e0b; font-weight:700;">${d.averageRating.toFixed(1)} ★</span></td>
+              <td>${d.reviewCount}</td>
+            </tr>`).join("");
+        } else {
+          tbody.innerHTML = `<tr><td colspan="3" class="muted">No dish ratings yet.</td></tr>`;
+        }
+
+        // Recent comments
+        const cList = document.getElementById("comments-list");
+        if (data.recentReviews && data.recentReviews.length > 0) {
+          cList.innerHTML = data.recentReviews.map(r => `
+            <div style="background:#fdfaf6; border:1px solid var(--color-border); border-radius:8px; padding:10px 14px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="color:#f59e0b; font-weight:700; font-size:1.1rem;">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</span>
+                <span class="muted" style="font-size:0.8rem;">${new Date(r.createdAtUtc).toLocaleString()}</span>
+              </div>
+              <div style="margin-top:6px; font-style:italic;">"${escapeHtml(r.comment || 'No comment provided')}"</div>
+              <div class="muted" style="font-size:0.75rem; margin-top:4px;">By ${escapeHtml(r.userName || 'Customer')}</div>
+            </div>`).join("");
+        } else {
+          cList.innerHTML = `<p class="muted">No reviews submitted yet.</p>`;
+        }
+
+      } catch (err) {
+        showMessage(document.getElementById("msg"), err.message, "error");
+      }
+    }
+
+    load();
+  </script>
+</body>
+</html>
