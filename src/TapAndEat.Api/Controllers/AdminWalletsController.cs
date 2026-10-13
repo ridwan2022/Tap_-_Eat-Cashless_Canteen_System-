@@ -60,4 +60,14 @@ public class AdminWalletsController : ControllerBase
     /// <summary>Task 5.4 — run the subsidy job now (the background scheduler does this automatically). Idempotent.</summary>
     [HttpPost("subsidies/run")]
     public async Task<ActionResult<SubsidyRunResultDto>> RunSubsidies() => Ok(await _subsidies.RunDueCreditsAsync());
+
+    /// <summary>Task 12.3 — company-wide subsidy reconciliation and reporting.</summary>
+    [HttpGet("subsidies/reports")]
+    public async Task<ActionResult<AdminSubsidyReportDto>> SubsidyReports(
+        [FromQuery] DateTimeOffset? from = null,
+        [FromQuery] DateTimeOffset? to = null)
+    {
+        try { return Ok(await _wallets.GetAdminSubsidyReportAsync(from, to)); }
+        catch (AppException ex) { return ex.ToActionResult(); }
+    }
 }
