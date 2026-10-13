@@ -40,6 +40,16 @@ const Auth = {
   isStaff() {
     const u = Auth.user();
     return !!u && (u.role === "Admin" || u.role === "KitchenStaff");
+  },
+
+  isCustomer() {
+    const u = Auth.user();
+    return !!u && u.role === "Customer";
+  },
+
+  isKitchen() {
+    const u = Auth.user();
+    return !!u && u.role === "KitchenStaff";
   }
 };
 
@@ -50,10 +60,10 @@ const Cart = {
     try { return JSON.parse(localStorage.getItem(Cart.KEY)) || {}; } catch { return {}; }
   },
   save(cart) { localStorage.setItem(Cart.KEY, JSON.stringify(cart)); },
-  add(item) {
+  add(item, qty = 1) {
     const cart = Cart.get();
     const line = cart[item.id] || { id: item.id, name: item.name, price: item.price, qty: 0 };
-    line.qty = Math.min(20, line.qty + 1);
+    line.qty = Math.min(20, line.qty + (Number(qty) || 1));
     line.price = item.price;
     cart[item.id] = line;
     Cart.save(cart);
@@ -121,41 +131,92 @@ function renderNav() {
   if (!mount) return;
 
   const user = Auth.user();
+  const isCust = user && user.role === "Customer";
+  const isKitch = user && user.role === "KitchenStaff";
+  const isAdm = user && user.role === "Admin";
+
   const links = [`<a href="/menu.html">Menu</a>`];
-  if (user) {
+
+  // Only customers can order food, add to cart, and have my orders or wallets options
+  if (isCust) {
     const n = Cart.count();
     links.push(`<a href="/checkout.html">Cart${n ? " (" + n + ")" : ""}</a>`);
     links.push(`<a href="/orders.html">My orders</a>`);
     links.push(`<a href="/wallet.html">Wallet</a>`);
   }
+
   links.push(`<a href="/board.html">Token Board</a>`);
-  if (Auth.isStaff()) {
+
+  // Kitchen board is exclusive for kitchen role
+  if (isKitch) {
     links.push(`<a href="/kitchen.html">Kitchen</a>`);
     links.push(`<a href="/counter.html">Counter</a>`);
   }
-  if (Auth.isAdmin()) {
+
+  // Admins manage the system: counter, admin dashboards (no kitchen, no cart, no orders, no wallet)
+  if (isAdm) {
+    links.push(`<a href="/counter.html">Counter</a>`);
     links.push(`<a href="/admin.html">Admin</a>`);
     links.push(`<a href="/admin-wallets.html">Wallets</a>`);
     links.push(`<a href="/admin-inventory.html">Inventory</a>`);
     links.push(`<a href="/admin-forecast.html">Forecast</a>`);
+    links.push(`<a href="/admin-feedback.html">Feedback</a>`);
+  }
+
+  const langLabel = (typeof I18n !== "undefined" && I18n.getLanguage() === "bn") ? "English" : "বাংলা";
+  const langBtn = `<button id="lang-switch-btn" class="lang-btn" type="button" aria-label="Switch Language">🌐 ${langLabel}</button>`;
+
+  let notifBell = "";
+  if (user) {
+    notifBell = `
+      <div class="notif-bell-wrap">
+        <button id="notif-bell-btn" class="notif-bell-btn" aria-label="Notifications" title="Notifications">
+          🔔<span id="notif-badge" class="notif-badge hidden">0</span>
+        </button>
+        <div id="notif-dropdown" class="notif-dropdown hidden" role="region" aria-live="polite">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <strong>Notifications</strong>
+            <button id="notif-read-all-btn" class="btn" style="padding:2px 8px; font-size:0.75rem;">Mark all read</button>
+          </div>
+          <div id="notif-list" style="font-size:0.85rem;">Loading...</div>
+        </div>
+      </div>`;
   }
 
   let rightSide;
   if (user) {
-    rightSide = `<span id="nav-user">${escapeHtml(user.fullName)} &middot; ${escapeHtml(user.role)}</span>
-                 <a href="#" id="nav-logout">Log out</a>`;
+    rightSide = `
+      ${notifBell}
+      ${langBtn}
+      <span id="nav-user">${escapeHtml(user.fullName)} &middot; ${escapeHtml(user.role)}</span>
+      <a href="#" id="nav-logout">Log out</a>`;
   } else {
-    rightSide = `<a href="/login.html">Log in</a><a href="/register.html">Sign up</a>`;
+    rightSide = `${langBtn}<a href="/login.html">Log in</a><a href="/register.html">Sign up</a>`;
   }
 
   mount.innerHTML = `
-    <header class="site-header">
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    <header class="site-header" role="banner">
       <div class="brand"><a href="/">🍛 Tap &amp; Eat</a></div>
-      <nav class="site-nav">
+      <nav class="site-nav" role="navigation" aria-label="Main Navigation">
         ${links.join("")}
         ${rightSide}
       </nav>
     </header>`;
+
+  const langSwitch = document.getElementById("lang-switch-btn");
+  if (langSwitch) {
+    langSwitch.addEventListener("click", () => {
+      if (typeof I18n !== "undefined") {
+        I18n.toggleLanguage();
+        renderNav();
+      }
+    });
+  }
+
+  if (user) {
+    setupNotifications();
+  }
 
   const logoutLink = document.getElementById("nav-logout");
   if (logoutLink) {
@@ -165,6 +226,89 @@ function renderNav() {
       window.location.href = "/login.html";
     });
   }
+}
+
+/** Sprint 4: Notifications UI helper */
+async function setupNotifications() {
+  const bell = document.getElementById("notif-bell-btn");
+  const dropdown = document.getElementById("notif-dropdown");
+  const badge = document.getElementById("notif-badge");
+  const list = document.getElementById("notif-list");
+  const markAllBtn = document.getElementById("notif-read-all-btn");
+
+  if (!bell || !dropdown) return;
+
+  async function refreshUnread() {
+    try {
+      const data = await api("/api/notifications/unread-count");
+      if (data && data.count > 0) {
+        badge.textContent = String(data.count);
+        badge.classList.remove("hidden");
+      } else {
+        badge.classList.add("hidden");
+      }
+    } catch { /* silent */ }
+  }
+
+  async function loadList() {
+    try {
+      const items = await api("/api/notifications?limit=10");
+      if (!items || items.length === 0) {
+        list.innerHTML = `<p class="muted" style="margin:8px 0;">No notifications yet.</p>`;
+        return;
+      }
+      list.innerHTML = items.map(n => `
+        <div class="notif-item ${n.isRead ? '' : 'unread'}" data-id="${n.id}">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+            <div style="font-weight:600;">${escapeHtml(n.title)}</div>
+            ${!n.isRead ? `<button class="btn notif-read-btn" data-id="${n.id}" style="padding:1px 6px; font-size:0.7rem;">Read</button>` : ''}
+          </div>
+          <div style="color:var(--color-muted); margin-top:2px;">${escapeHtml(n.message)}</div>
+          <div class="notif-time">${new Date(n.createdAtUtc).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
+        </div>
+      `).join("");
+
+      list.querySelectorAll(".notif-read-btn").forEach(btn => {
+        btn.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          const id = btn.getAttribute("data-id");
+          try {
+            await api(`/api/notifications/${id}/read`, { method: "PUT" });
+            await refreshUnread();
+            await loadList();
+          } catch { /* silent */ }
+        });
+      });
+    } catch (err) {
+      list.innerHTML = `<p class="muted">Could not load notifications.</p>`;
+    }
+  }
+
+  bell.addEventListener("click", (e) => {
+    e.stopPropagation();
+    dropdown.classList.toggle("hidden");
+    if (!dropdown.classList.contains("hidden")) {
+      loadList();
+    }
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!dropdown.contains(e.target) && e.target !== bell) {
+      dropdown.classList.add("hidden");
+    }
+  });
+
+  if (markAllBtn) {
+    markAllBtn.addEventListener("click", async () => {
+      try {
+        await api("/api/notifications/read-all", { method: "PUT" });
+        await refreshUnread();
+        await loadList();
+      } catch { /* silent */ }
+    });
+  }
+
+  await refreshUnread();
 }
 
 /** Redirects to login if not authenticated; returns the user object otherwise. */
@@ -192,6 +336,28 @@ function requireAdmin() {
   const user = requireAuth();
   if (user && user.role !== "Admin") {
     window.location.href = "/menu.html";
+    return null;
+  }
+  return user;
+}
+
+/** Redirects non-customers away (customers only). */
+function requireCustomer() {
+  const user = requireAuth();
+  if (user && user.role !== "Customer") {
+    alert("This feature is reserved for customer accounts.");
+    window.location.href = "/menu.html";
+    return null;
+  }
+  return user;
+}
+
+/** Redirects non-kitchen staff away (exclusive for Kitchen Staff). */
+function requireKitchen() {
+  const user = requireAuth();
+  if (user && user.role !== "KitchenStaff") {
+    alert("Kitchen board is exclusive for kitchen role.");
+    window.location.href = "/";
     return null;
   }
   return user;
