@@ -69,3 +69,27 @@ const translations = {
     "token_label": "Token",
     "estimated_prep": "Est. Prep Time",
     "queue_position": "Queue Position",  
+
+    // Notifications
+    "notifications_title": "Notifications & Alerts",
+    "notif_mark_read": "Mark as read",
+    "notif_mark_all_read": "Mark all as read",
+    "notif_empty": "No notifications yet.",
+    "notif_push_enable": "Enable Browser Push Notifications",
+    "notif_push_enabled": "Browser Notifications Enabled",
+
+    // Order History & Subsidy
+    "history_title": "Order History & Entitlements",
+    "history_filter_all": "All Statuses",
+    "history_date_from": "From Date",
+    "history_date_to": "To Date",
+    "history_filter_btn": "Filter",
+    "history_total_spent": "Total Spent",
+    "history_page": "Page",
+    "subsidy_summary_title": "Subsidy & Allowance Summary",
+    "subsidy_credited": "Subsidy Credited",
+    "subsidy_spent": "Subsidy Spent",
+    "subsidy_balance": "Remaining Balance",
+    "subsidy_period_week": "This Week",
+    "subsidy_period_month": "This Month",
+    "subsidy_period_all": "All Time",
