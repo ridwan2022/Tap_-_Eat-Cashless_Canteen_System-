@@ -93,3 +93,21 @@ const translations = {
     "subsidy_period_week": "This Week",
     "subsidy_period_month": "This Month",
     "subsidy_period_all": "All Time",
+
+    // Feedback
+    "feedback_title": "Meal Satisfaction Feedback",
+    "feedback_rate_dish": "Rate Your Meal",
+    "feedback_star_1": "1 Star - Poor",
+    "feedback_star_2": "2 Stars - Fair",
+    "feedback_star_3": "3 Stars - Good",
+    "feedback_star_4": "4 Stars - Very Good",
+    "feedback_star_5": "5 Stars - Excellent",
+    "feedback_comment_placeholder": "Share your thoughts on food quality, temperature or service...",
+    "feedback_submit": "Submit Rating",
+    "feedback_thanks": "Thank you for your feedback!",
+    "feedback_admin_dashboard": "Quality & Customer Satisfaction",
+    "feedback_overall_avg": "Overall Satisfaction",
+    "feedback_total_reviews": "Total Reviews",
+    "feedback_dish_ratings": "Satisfaction By Dish",
+    "feedback_recent_comments": "Recent Customer Comments"
+  },
