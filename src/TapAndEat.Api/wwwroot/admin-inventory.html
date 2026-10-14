@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Inventory — Tap &amp; Eat</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body>
+  <div id="site-header"></div>
+  <main class="container">
+    <div class="row between"><h1>Inventory</h1></div>
+    <p class="muted">Ingredient stock deducts automatically as orders are placed, matched against each menu item's recipe. Levels never go negative — they just trigger the low-stock flag below.</p>
+    <div id="msg" class="msg hidden"></div>
+
+    <div class="card">
+      <h2>Add ingredient</h2>
+      <form id="add-form" class="row" novalidate>
+        <input type="text" id="new-name" placeholder="Name (e.g. Chicken)" required style="max-width:200px;">
+        <input type="text" id="new-unit" placeholder="Unit (g, ml, pcs)" value="g" style="max-width:120px;">
+        <input type="number" id="new-stock" placeholder="Initial stock" min="0" step="0.01" style="max-width:140px;">
+        <input type="number" id="new-threshold" placeholder="Reorder threshold" min="0" step="0.01" style="max-width:160px;">
+        <button type="submit">Add</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Ingredients</h2>
+      <table><thead><tr><th>Name</th><th>Stock</th><th>Reorder at</th><th>Status</th><th>Adjust</th></tr></thead><tbody id="rows"></tbody></table>
+    </div>
+
+    <div class="card">
+      <h2>Recipes (ingredients per menu item)</h2>
+      <div class="row"><select id="item-select"></select></div>
+      <table style="margin-top:10px;"><thead><tr><th>Ingredient</th><th>Qty per portion</th><th></th></tr></thead><tbody id="recipe-rows"></tbody></table>
+      <div class="row" style="margin-top:8px;">
+        <select id="recipe-ingredient"></select>
+        <input type="number" id="recipe-qty" placeholder="Qty per portion" min="0.0001" step="0.0001" style="max-width:160px;">
+        <button id="recipe-add">Add / update line</button>
+      </div>
+    </div>
+  </main>
+  <script src="/js/i18n.js"></script>
+  <script src="/js/site.js"></script>
+  <script>
+    if (!requireAdmin()) throw new Error("redirecting");
+    const msg = document.getElementById("msg");
+    let ingredients = [];
+
+    function statusPill(i) {
+      return i.isLowStock ? `<span class="pill rejected">Low stock</span>` : `<span class="pill approved">OK</span>`;
+    }
+    async function loadIngredients() {
+      ingredients = await api("/api/admin/ingredients");
+      document.getElementById("rows").innerHTML = ingredients.map(i => `<tr>
+        <td>${escapeHtml(i.name)}</td><td>${i.stockQuantity} ${escapeHtml(i.unit)}</td><td>${i.reorderThreshold} ${escapeHtml(i.unit)}</td>
+        <td>${statusPill(i)}</td>
+        <td><span class="row"><input type="number" step="0.01" data-adjust="${i.id}" placeholder="± amount" style="width:110px;">
+          <button class="secondary" data-go="${i.id}">Apply</button></span></td></tr>`).join("");
+      const sel = document.getElementById("recipe-ingredient");
+      sel.innerHTML = ingredients.map(i => `<option value="${i.id}">${escapeHtml(i.name)} (${escapeHtml(i.unit)})</option>`).join("");
+    }
+    document.getElementById("rows").addEventListener("click", async (e) => {
+      const btn = e.target.closest("button[data-go]"); if (!btn) return;
+      const input = document.querySelector(`[data-adjust="${btn.dataset.go}"]`);
+      const amount = parseFloat(input.value);
+      if (!amount) return;
+      try { await api(`/api/admin/ingredients/${btn.dataset.go}/adjust`, { method: "POST", body: { amount } }); input.value = ""; loadIngredients(); }
+      catch (err) { showMessage(msg, err.message, "error"); }
+    });
+    document.getElementById("add-form").addEventListener("submit", async (e) => {
+      e.preventDefault(); hideMessage(msg);
+      try {
+        await api("/api/admin/ingredients", { method: "POST", body: {
+          name: document.getElementById("new-name").value, unit: document.getElementById("new-unit").value || "g",
+          initialStock: parseFloat(document.getElementById("new-stock").value) || 0,
+          reorderThreshold: parseFloat(document.getElementById("new-threshold").value) || 0 } });
+        document.getElementById("add-form").reset(); document.getElementById("new-unit").value = "g";
+        loadIngredients();
+      } catch (err) { showMessage(msg, err.message, "error"); }
+    });
+
+    let menuItems = [];
+    async function loadMenuSelect() {
+      menuItems = await api("/api/admin/menu");
+      document.getElementById("item-select").innerHTML = menuItems.map(i => `<option value="${i.id}">${escapeHtml(i.name)}</option>`).join("");
+      loadRecipe();
+    }
+    async function loadRecipe() {
+      const id = document.getElementById("item-select").value; if (!id) return;
+      const recipe = await api(`/api/admin/menu/${id}/recipe`);
+      document.getElementById("recipe-rows").innerHTML = recipe.map(r => `<tr>
+        <td>${escapeHtml(r.ingredientName)}</td><td>${r.quantityPerItem} ${escapeHtml(r.unit)}</td>
+        <td><button class="secondary" data-rm="${r.ingredientId}">Remove</button></td></tr>`).join("")
+        || '<tr><td colspan="3" class="muted">No recipe set for this item yet.</td></tr>';
+    }
+    document.getElementById("item-select").addEventListener("change", loadRecipe);
+    document.getElementById("recipe-rows").addEventListener("click", async (e) => {
+      const btn = e.target.closest("button[data-rm]"); if (!btn) return;
+      await api(`/api/admin/menu/${document.getElementById("item-select").value}/recipe/${btn.dataset.rm}`, { method: "DELETE" });
+      loadRecipe();
+    });
+    document.getElementById("recipe-add").onclick = async () => {
+      try {
+        await api(`/api/admin/menu/${document.getElementById("item-select").value}/recipe`, { method: "PUT", body: {
+          ingredientId: document.getElementById("recipe-ingredient").value,
+          quantityPerItem: parseFloat(document.getElementById("recipe-qty").value) } });
+        document.getElementById("recipe-qty").value = ""; loadRecipe();
+      } catch (err) { showMessage(msg, err.message, "error"); }
+    };
+
+    (async () => { await loadIngredients(); await loadMenuSelect(); })();
+  </script>
+</body>
+</html>
