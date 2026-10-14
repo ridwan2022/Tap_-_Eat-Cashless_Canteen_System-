@@ -186,3 +186,20 @@ const translations = {
     "notif_empty": "কোনো নতুন বিজ্ঞপ্তি নেই।",
     "notif_push_enable": "ব্রাউজার পুশ নোটিফিকেশন চালু করুন",
     "notif_push_enabled": "ব্রাউজার নোটিফিকেশন সক্রিয়",
+
+    // Order History & Subsidy
+    "history_title": "অর্ডারের ইতিহাস ও ভাউচার সুবিধা",
+    "history_filter_all": "সব স্ট্যাটাস",
+    "history_date_from": "শুরুর তারিখ",
+    "history_date_to": "শেষ তারিখ",
+    "history_filter_btn": "ফিল্টার করুন",
+    "history_total_spent": "মোট খরচ",
+    "history_page": "পৃষ্ঠা",
+    "subsidy_summary_title": "ভর্তুকি ও ভাউচার বিবরণ",
+    "subsidy_credited": "মোট প্রাপ্ত ভর্তুকি",
+    "subsidy_spent": "ব্যবহৃত ভর্তুকি",
+    "subsidy_balance": "অবশিষ্ট ব্যালেন্স",
+    "subsidy_period_week": "চলতি সপ্তাহ",
+    "subsidy_period_month": "চলতি মাস",
+    "subsidy_period_all": "সব সময়",
+
