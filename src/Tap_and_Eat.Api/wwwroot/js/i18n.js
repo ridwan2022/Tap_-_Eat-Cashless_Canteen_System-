@@ -71,3 +71,12 @@ const translations = {
     "token_label": "Token",
     "estimated_prep": "Est. Prep Time",
     "queue_position": "Queue Position",
+
+   // Notifications
+    "notifications_title": "Notifications & Alerts",
+    "notif_mark_read": "Mark as read",
+    "notif_mark_all_read": "Mark all as read",
+    "notif_empty": "No notifications yet.",
+    "notif_push_enable": "Enable Browser Push Notifications",
+    "notif_push_enabled": "Browser Notifications Enabled",
+  
