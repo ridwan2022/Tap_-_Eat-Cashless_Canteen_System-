@@ -46,3 +46,35 @@ public class InMemoryFeedbackRepository : IFeedbackRepository
         var list = _feedbacks.Values.OrderByDescending(f => f.CreatedAtUtc).Take(limit).ToList();
         return Task.FromResult<IReadOnlyList<OrderFeedback>>(list);
     }
+    public async Task<FeedbackSummaryData> GetSummaryAsync()
+    {
+        var all = _feedbacks.Values.ToList();
+        var summary = new FeedbackSummaryData
+        {
+            TotalReviews = all.Count,
+            AverageRating = all.Count > 0 ? Math.Round(all.Average(f => f.Rating), 1) : 0,
+            StarCounts = Enumerable.Range(1, 5).ToDictionary(i => i, i => all.Count(f => f.Rating == i)),
+            RecentReviews = all.OrderByDescending(f => f.CreatedAtUtc).Take(15).ToList()
+        };
+
+        var byItem = all.Where(f => f.MenuItemId.HasValue).GroupBy(f => f.MenuItemId!.Value);
+        foreach (var group in byItem)
+        {
+            string name = "Dish";
+            if (_menu is not null)
+            {
+                var item = await _menu.GetByIdAsync(group.Key);
+                if (item is not null) name = item.Name;
+            }
+            summary.ItemRatings.Add(new MenuItemFeedbackRating
+            {
+                MenuItemId = group.Key,
+                MenuItemName = name,
+                AverageRating = Math.Round(group.Average(f => f.Rating), 1),
+                ReviewCount = group.Count()
+            });
+        }
+
+        return summary;
+    }
+}
