@@ -47,3 +47,15 @@ const translations = {
     "menu_add_to_cart": "Add to Cart",
     "menu_voice_listening": "Listening... speak dish name",
     "menu_voice_btn": "🎤 Voice Order",
+
+
+    // Cart & Checkout
+    "cart_title": "Your Order Cart",
+    "cart_empty": "Your cart is empty. Please add dishes from the menu.",
+    "cart_subtotal": "Subtotal",
+    "cart_total": "Total Amount",
+    "cart_checkout": "Proceed to Payment",
+    "cart_select_payment": "Select Payment Method",
+    "payment_bkash": "bKash (MFS)",
+    "payment_nagad": "Nagad (MFS)",
+    "payment_wallet": "Employee RFID Wallet",
