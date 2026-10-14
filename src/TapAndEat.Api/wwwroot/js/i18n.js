@@ -111,3 +111,78 @@ const translations = {
     "feedback_dish_ratings": "Satisfaction By Dish",
     "feedback_recent_comments": "Recent Customer Comments"
   },
+
+  bn: {
+    // Nav & Common
+    "brand_title": "🍛 ট্যাপ অ্যান্ড ইট",
+    "nav_menu": "মেনু",
+    "nav_cart": "কার্ট",
+    "nav_orders": "আমার অর্ডার",
+    "nav_wallet": "ওয়ালেট",
+    "nav_board": "টোকেন বোর্ড",
+    "nav_kitchen": "রান্নাঘর",
+    "nav_counter": "কাউন্টার",
+    "nav_admin": "অ্যাডমিন",
+    "nav_wallets": "ওয়ালেটসমূহ",
+    "nav_inventory": "মজুদ কাঁচামাল",
+    "nav_forecast": "চাহিদা পূর্বাভাস",
+    "nav_feedback": "মতামত ও রেটিং",
+    "nav_notifications": "বিজ্ঞপ্তি",
+    "nav_login": "লগইন",
+    "nav_signup": "রেজিস্ট্রেশন",
+    "nav_logout": "লগআউট",
+    "switch_lang": "English",
+
+    // Accessibility
+    "skip_link": "মূল বিষয়বস্তুতে যান",
+    "a11y_nav": "প্রধান মেনু",
+    "a11y_cart_count": "টি খাবার কার্টে আছে",
+    "a11y_notifications": "বিজ্ঞপ্তিসমূহ",
+    "a11y_unread_badge": "টি অপঠিত বিজ্ঞপ্তি",
+    "a11y_voice_search": "কণ্ঠস্বরের মাধ্যমে খাবার খুঁজুন",
+
+    // Menu
+    "menu_title": "ডিজিটাল ক্যাফেটেরিয়া মেনু",
+    "menu_subtitle": "আপনার পছন্দের খাবার নির্বাচন করুন এবং তাৎক্ষণিক টোকেন নিন",
+    "menu_filter_all": "সকল",
+    "menu_filter_vegetarian": "নিরামিষ",
+    "menu_filter_nonveg": "আমিষ",
+    "menu_filter_spicy": "ঝাল",
+    "menu_filter_sweet": "মিষ্টি",
+    "menu_available": "মজুদ আছে",
+    "menu_low_stock": "স্বল্প মজুদ",
+    "menu_out_of_stock": "শেষ হয়ে গেছে",
+    "menu_add_to_cart": "কার্টে যোগ করুন",
+    "menu_voice_listening": "শুনছি... খাবারের নাম বলুন",
+    "menu_voice_btn": "🎤 ভয়েস অর্ডার",
+
+    // Cart & Checkout
+    "cart_title": "আপনার অর্ডারের কার্ট",
+    "cart_empty": "আপনার কার্ট খালি। মেনু থেকে খাবার যোগ করুন।",
+    "cart_subtotal": "মোট মূল্য",
+    "cart_total": "সর্বমোট প্রদেয়",
+    "cart_checkout": "পেমেন্ট করতে এগিয়ে যান",
+    "cart_select_payment": "পেমেন্ট পদ্ধতি নির্বাচন করুন",
+    "payment_bkash": "বিকাশ (bKash)",
+    "payment_nagad": "নগদ (Nagad)",
+    "payment_wallet": "কর্মচারী আরএফআইডি ওয়ালেট",
+
+    // Order & Status
+    "status_pending": "পেমেন্ট অপেক্ষমান",
+    "status_paid": "পরিশোধিত",
+    "status_preparing": "তৈরি হচ্ছে",
+    "status_ready": "সংগ্রহের জন্য প্রস্তুত",
+    "status_collected": "সংগৃহীত",
+    "status_cancelled": "বাতিল",
+    "status_expired": "মেয়াদোত্তীর্ণ",
+    "token_label": "টোকেন নম্বর",
+    "estimated_prep": "আনুমানিক তৈরির সময়",
+    "queue_position": "লাইনে অবস্থান",
+
+    // Notifications
+    "notifications_title": "বিজ্ঞপ্তি ও সতর্কতা",
+    "notif_mark_read": "পড়া হয়েছে হিসেবে চিহ্নিত করুন",
+    "notif_mark_all_read": "সবগুলো পড়া হয়েছে হিসেবে চিহ্নিত করুন",
+    "notif_empty": "কোনো নতুন বিজ্ঞপ্তি নেই।",
+    "notif_push_enable": "ব্রাউজার পুশ নোটিফিকেশন চালু করুন",
+    "notif_push_enabled": "ব্রাউজার নোটিফিকেশন সক্রিয়",
