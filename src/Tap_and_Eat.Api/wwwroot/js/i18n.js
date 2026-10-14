@@ -59,3 +59,15 @@ const translations = {
     "payment_bkash": "bKash (MFS)",
     "payment_nagad": "Nagad (MFS)",
     "payment_wallet": "Employee RFID Wallet",
+
+// Order & Status
+    "status_pending": "Pending Payment",
+    "status_paid": "Paid",
+    "status_preparing": "Preparing",
+    "status_ready": "Ready for Pickup",
+    "status_collected": "Collected",
+    "status_cancelled": "Cancelled",
+    "status_expired": "Expired",
+    "token_label": "Token",
+    "estimated_prep": "Est. Prep Time",
+    "queue_position": "Queue Position",
