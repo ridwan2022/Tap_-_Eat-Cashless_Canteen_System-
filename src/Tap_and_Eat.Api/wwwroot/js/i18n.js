@@ -32,3 +32,18 @@ const translations = {
     "a11y_notifications": "Notifications",
     "a11y_unread_badge": "unread notifications",
     "a11y_voice_search": "Search dishes using voice",
+
+    // Menu
+    "menu_title": "Digital Cafeteria Menu",
+    "menu_subtitle": "Select your meals and place an order with instant token generation",
+    "menu_filter_all": "All",
+    "menu_filter_vegetarian": "Vegetarian",
+    "menu_filter_nonveg": "Non-Veg",
+    "menu_filter_spicy": "Spicy",
+    "menu_filter_sweet": "Sweet",
+    "menu_available": "In Stock",
+    "menu_low_stock": "Low Stock",
+    "menu_out_of_stock": "Sold Out",
+    "menu_add_to_cart": "Add to Cart",
+    "menu_voice_listening": "Listening... speak dish name",
+    "menu_voice_btn": "🎤 Voice Order",
