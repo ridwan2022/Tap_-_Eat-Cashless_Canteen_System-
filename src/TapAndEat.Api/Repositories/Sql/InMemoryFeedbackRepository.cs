@@ -1,0 +1,80 @@
+using System.Collections.Concurrent;
+using TapAndEat.Api.Models;
+
+namespace TapAndEat.Api.Repositories;
+
+public class InMemoryFeedbackRepository : IFeedbackRepository
+{
+    private readonly ConcurrentDictionary<Guid, OrderFeedback> _feedbacks = new();
+    private readonly IMenuRepository? _menu;
+
+    public InMemoryFeedbackRepository(IMenuRepository? menu = null)
+    {
+        _menu = menu;
+    }
+
+    public Task<OrderFeedback> UpsertAsync(OrderFeedback feedback)
+    {
+        var existing = _feedbacks.Values.FirstOrDefault(f => f.OrderId == feedback.OrderId);
+        if (existing is not null)
+        {
+            existing.Rating = feedback.Rating;
+            existing.Comment = feedback.Comment;
+            existing.UpdatedAtUtc = feedback.UpdatedAtUtc;
+            if (feedback.MenuItemId.HasValue) existing.MenuItemId = feedback.MenuItemId;
+            return Task.FromResult(existing);
+        }
+
+        _feedbacks[feedback.Id] = feedback;
+        return Task.FromResult(feedback);
+    }
+
+    public Task<OrderFeedback?> GetByOrderIdAsync(Guid orderId)
+    {
+        var match = _feedbacks.Values.FirstOrDefault(f => f.OrderId == orderId);
+        return Task.FromResult(match);
+    }
+
+    public Task<IReadOnlyList<OrderFeedback>> GetByUserIdAsync(Guid userId)
+    {
+        var list = _feedbacks.Values.Where(f => f.UserId == userId).OrderByDescending(f => f.CreatedAtUtc).ToList();
+        return Task.FromResult<IReadOnlyList<OrderFeedback>>(list);
+    }
+
+    public Task<IReadOnlyList<OrderFeedback>> GetAllAsync(int limit = 100)
+    {
+        var list = _feedbacks.Values.OrderByDescending(f => f.CreatedAtUtc).Take(limit).ToList();
+        return Task.FromResult<IReadOnlyList<OrderFeedback>>(list);
+    }
+    public async Task<FeedbackSummaryData> GetSummaryAsync()
+    {
+        var all = _feedbacks.Values.ToList();
+        var summary = new FeedbackSummaryData
+        {
+            TotalReviews = all.Count,
+            AverageRating = all.Count > 0 ? Math.Round(all.Average(f => f.Rating), 1) : 0,
+            StarCounts = Enumerable.Range(1, 5).ToDictionary(i => i, i => all.Count(f => f.Rating == i)),
+            RecentReviews = all.OrderByDescending(f => f.CreatedAtUtc).Take(15).ToList()
+        };
+
+        var byItem = all.Where(f => f.MenuItemId.HasValue).GroupBy(f => f.MenuItemId!.Value);
+        foreach (var group in byItem)
+        {
+            string name = "Dish";
+            if (_menu is not null)
+            {
+                var item = await _menu.GetByIdAsync(group.Key);
+                if (item is not null) name = item.Name;
+            }
+            summary.ItemRatings.Add(new MenuItemFeedbackRating
+            {
+                MenuItemId = group.Key,
+                MenuItemName = name,
+                AverageRating = Math.Round(group.Average(f => f.Rating), 1),
+                ReviewCount = group.Count()
+            });
+        }
+
+        return summary;
+    }
+}
