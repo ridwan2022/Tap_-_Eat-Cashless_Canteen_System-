@@ -24,3 +24,11 @@ const translations = {
     "nav_signup": "Sign up",
     "nav_logout": "Log out",
     "switch_lang": "বাংলা",
+
+    // Accessibility
+    "skip_link": "Skip to main content",
+    "a11y_nav": "Main Navigation",
+    "a11y_cart_count": "items in cart",
+    "a11y_notifications": "Notifications",
+    "a11y_unread_badge": "unread notifications",
+    "a11y_voice_search": "Search dishes using voice",
