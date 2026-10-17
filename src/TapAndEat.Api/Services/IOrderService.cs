@@ -1,5 +1,6 @@
 using TapAndEat.Api.DTOs;
 using TapAndEat.Api.Infrastructure;
+using TapAndEat.Api.Models;
 
 namespace TapAndEat.Api.Services;
 
@@ -30,4 +31,8 @@ public interface IOrderService
 
     /// <summary>Expires unpaid orders past their payment window and releases their stock. Returns how many.</summary>
     Task<int> ExpireStaleOrdersAsync();
+
+    /// <summary>Task 12.2 — paginated, filtered order history for the user.</summary>
+    Task<OrderHistoryPageDto> GetOrderHistoryAsync(
+        Guid userId, DateTimeOffset? from = null, DateTimeOffset? to = null, OrderStatus? status = null, int page = 1, int pageSize = 10);
 }

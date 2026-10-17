@@ -30,6 +30,7 @@ public static class AppHost
         builder.Services.Configure<OrderOptions>(config.GetSection("Orders"));
         builder.Services.Configure<BusinessOptions>(config.GetSection("Business"));
         builder.Services.Configure<JobsOptions>(config.GetSection("Jobs"));
+        builder.Services.Configure<ForecastOptions>(config.GetSection("Forecast"));
 
         // ---- Framework ----
         // AddApplicationPart: controllers are found even when the app is booted from
@@ -47,8 +48,7 @@ public static class AppHost
                 policy.AllowAnyHeader().AllowAnyMethod().SetIsOriginAllowed(_ => true).AllowCredentials());
         });
 
-        // ---- Repositories (in-memory, singletons). Swap for EF Core-backed
-        // implementations to persist — see README "Persistence". ----
+        // ---- Repositories (in-memory, singletons) ----
         builder.Services.AddSingleton<IUserRepository, InMemoryUserRepository>();
         builder.Services.AddSingleton<IMenuRepository, InMemoryMenuRepository>();
         builder.Services.AddSingleton<IPasswordResetRepository, InMemoryPasswordResetRepository>();
@@ -57,6 +57,10 @@ public static class AppHost
         builder.Services.AddSingleton<IWalletRepository, InMemoryWalletRepository>();
         builder.Services.AddSingleton<IQueueTokenRepository, InMemoryQueueTokenRepository>();
         builder.Services.AddSingleton<IRfidTapRepository, InMemoryRfidTapRepository>();
+        builder.Services.AddSingleton<IIngredientRepository, InMemoryIngredientRepository>();
+        // builder.Services.AddSingleton<IForecastRepository, InMemoryForecastRepository>();
+        // builder.Services.AddSingleton<INotificationRepository, InMemoryNotificationRepository>();
+        // builder.Services.AddSingleton<IFeedbackRepository, InMemoryFeedbackRepository>();
 
         // ---- Auth ----
         builder.Services.AddSingleton<ITokenService, TokenService>();
@@ -89,6 +93,14 @@ public static class AppHost
         builder.Services.AddScoped<IWalletService, WalletService>();
         builder.Services.AddScoped<ISubsidyService, SubsidyService>();
         builder.Services.AddScoped<ICounterService, CounterService>();
+
+        // ---- Sprint 3 / 4 services ----
+        builder.Services.AddScoped<IInventoryService, InventoryService>();
+        // builder.Services.AddScoped<IForecastService, ForecastService>();
+        // builder.Services.AddScoped<INotificationService, NotificationService>();
+        // builder.Services.AddScoped<IQueuePositionService, QueuePositionService>();
+        // builder.Services.AddScoped<IFeedbackService, FeedbackService>();
+
         builder.Services.AddHostedService<ScheduledJobsService>();
 
         var app = builder.Build();

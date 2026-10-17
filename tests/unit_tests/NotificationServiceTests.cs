@@ -2,6 +2,8 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using TapAndEat.Api;
+using TapAndEat.Api.Data;
 using TapAndEat.Api.DTOs;
 using TapAndEat.Api.Hubs;
 using TapAndEat.Api.Infrastructure;
@@ -84,14 +86,14 @@ public class NotificationServiceTests
         var order = await _f.OrderService.CreateOrderAsync(user.Id, new CreateOrderRequest(new List<OrderItemRequest> { new(item.Id, 1) }));
         await _f.OrderService.MarkPaidAsync(order.Id, Guid.NewGuid());
 
-        var token = await _f.QueueTokens.GetTokenForOrderAsync(order.Id);
+        var token = await _f.QueueTokens.GetByOrderIdAsync(order.Id);
         token.Should().NotBeNull();
 
-        await _f.QueueTokens.SetStatusAsync(token!.Id, QueueTokenStatus.Preparing);
+        await _f.QueueTokens.UpdateStatusAsync(token!.Id, QueueTokenStatus.Preparing);
         var notifs = await _f.NotificationService.GetUserNotificationsAsync(user.Id);
         notifs.Should().Contain(n => n.Type == NotificationType.TokenPreparing);
 
-        await _f.QueueTokens.SetStatusAsync(token.Id, QueueTokenStatus.Ready);
+        await _f.QueueTokens.UpdateStatusAsync(token.Id, QueueTokenStatus.Ready);
         notifs = await _f.NotificationService.GetUserNotificationsAsync(user.Id);
         notifs.Should().Contain(n => n.Type == NotificationType.TokenReady);
 
@@ -167,7 +169,7 @@ public class NotificationServiceTests
         (await _f.NotificationService.GetUnreadCountAsync(userA.Id)).Should().Be(1);
     }
 
-    // ---- local fixture (same idea as ServiceFixture, kept inside unit_tests) ----
+    // ---- local fixture (kept inside unit_tests) ----
     private sealed class Fixture
     {
         public IUserRepository Users { get; } = new InMemoryUserRepository();
@@ -231,7 +233,7 @@ public class NotificationServiceTests
         }
     }
 
-    private sealed class NullHubContext : Microsoft.AspNetCore.SignalR.IHubContext<MenuHub>
+    public sealed class NullHubContext : Microsoft.AspNetCore.SignalR.IHubContext<MenuHub>
     {
         public Microsoft.AspNetCore.SignalR.IHubClients Clients { get; } = new NullClients();
         public Microsoft.AspNetCore.SignalR.IGroupManager Groups { get; } = new NullGroups();
@@ -262,9 +264,9 @@ public class NotificationServiceTests
         }
     }
 
-    public sealed class FakeClock : IClock
+    public sealed class FakeClock : TimeProvider
     {
         public DateTimeOffset UtcNow { get; set; } = DateTimeOffset.UtcNow;
-        public DateTimeOffset GetUtcNow() => UtcNow;
+        public override DateTimeOffset GetUtcNow() => UtcNow;
     }
 }

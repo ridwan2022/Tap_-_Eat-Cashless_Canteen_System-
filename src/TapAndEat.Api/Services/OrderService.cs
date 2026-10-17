@@ -20,6 +20,9 @@ public class OrderService : IOrderService
     private readonly IMenuService _menu;
     private readonly IQueueService _queue;
     private readonly IPaymentTokenService _paymentTokens;
+    private readonly IInventoryService? _inventory;
+    private readonly INotificationService? _notifications;
+    private readonly ILogger<OrderService>? _logger;
     private readonly TimeProvider _clock;
     private readonly TimeSpan _paymentWindow;
 
@@ -30,7 +33,10 @@ public class OrderService : IOrderService
         IQueueService queue,
         IPaymentTokenService paymentTokens,
         IOptions<OrderOptions> options,
-        TimeProvider clock)
+        TimeProvider clock,
+        IInventoryService? inventory = null,
+        INotificationService? notifications = null,
+        ILogger<OrderService>? logger = null)
     {
         _orders = orders;
         _menuRepo = menuRepo;
@@ -38,6 +44,9 @@ public class OrderService : IOrderService
         _queue = queue;
         _paymentTokens = paymentTokens;
         _clock = clock;
+        _inventory = inventory;
+        _notifications = notifications;
+        _logger = logger;
         _paymentWindow = TimeSpan.FromMinutes(Math.Max(1, options.Value.PaymentWindowMinutes));
     }
 
@@ -93,6 +102,17 @@ public class OrderService : IOrderService
         }
 
         await _orders.AddAsync(order);
+
+        // Sprint 3 (Task 10.2) — ingredient deduction mirrors the portion-stock
+        // reservation above: it happens the moment the order is placed, the
+        // same instant the kitchen effectively commits to it. It is
+        // best-effort and never blocks or undoes the order.
+        if (_inventory is not null)
+        {
+            try { await _inventory.DeductForOrderAsync(order); }
+            catch (Exception ex) { _logger?.LogError(ex, "Inventory deduction failed for order {OrderId}.", order.Id); }
+        }
+
         return await ToDtoAsync(order);
     }
 
@@ -160,7 +180,14 @@ public class OrderService : IOrderService
         order.PaymentToken = _paymentTokens.Issue(order.Id, paymentId);
         await _orders.UpdateAsync(order);
 
-        await _queue.EnsureTokenForOrderAsync(order);
+        var token = await _queue.EnsureTokenForOrderAsync(order);
+
+        if (_notifications is not null)
+        {
+            try { await _notifications.NotifyOrderPaidAsync(order.Id, token.TokenNumber, order.Total, order.UserId); }
+            catch (Exception ex) { _logger?.LogError(ex, "Failed to send order paid notification for order {OrderId}.", order.Id); }
+        }
+
         return await ToDtoAsync(order);
     }
 
@@ -178,6 +205,16 @@ public class OrderService : IOrderService
         order.Status = OrderStatus.Collected;
         order.CollectedAtUtc = _clock.GetUtcNow();
         await _orders.UpdateAsync(order);
+
+        if (_notifications is not null)
+        {
+            var token = await _queue.GetTokenForOrderAsync(order.Id);
+            if (token is not null)
+            {
+                try { await _notifications.NotifyTokenStatusChangedAsync(token.Id, QueueTokenStatus.Collected); }
+                catch (Exception ex) { _logger?.LogError(ex, "Failed to send order collected notification for order {OrderId}.", order.Id); }
+            }
+        }
     }
 
     public async Task<int> ExpireStaleOrdersAsync()
@@ -222,5 +259,29 @@ public class OrderService : IOrderService
             order.PaidAtUtc,
             order.PaymentToken,
             token);
+    }
+
+    public async Task<OrderHistoryPageDto> GetOrderHistoryAsync(
+        Guid userId, DateTimeOffset? from = null, DateTimeOffset? to = null, OrderStatus? status = null, int page = 1, int pageSize = 10)
+    {
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+
+        var (items, totalCount) = await _orders.GetHistoryPagedAsync(userId, from, to, status, page, pageSize);
+        var dtos = new List<OrderDto>();
+        foreach (var order in items)
+        {
+            dtos.Add(await ToDtoAsync(order));
+        }
+
+        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+        var allUserOrders = await _orders.GetByUserAsync(userId);
+        var filteredAll = allUserOrders.AsEnumerable();
+        if (from.HasValue) filteredAll = filteredAll.Where(o => o.CreatedAtUtc >= from.Value);
+        if (to.HasValue) filteredAll = filteredAll.Where(o => o.CreatedAtUtc <= to.Value);
+        if (status.HasValue) filteredAll = filteredAll.Where(o => o.Status == status.Value);
+        var totalSpent = filteredAll.Where(o => o.Status is OrderStatus.Paid or OrderStatus.Collected).Sum(o => o.Total);
+
+        return new OrderHistoryPageDto(totalCount, page, pageSize, totalPages, totalSpent, dtos);
     }
 }

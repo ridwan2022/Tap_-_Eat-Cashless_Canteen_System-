@@ -42,4 +42,22 @@ public class InMemoryOrderRepository : IOrderRepository
         _orders[order.Id] = order;
         return Task.CompletedTask;
     }
+
+    public Task<(IReadOnlyList<Order> Items, int TotalCount)> GetHistoryPagedAsync(
+        Guid userId, DateTimeOffset? from = null, DateTimeOffset? to = null, OrderStatus? status = null, int page = 1, int pageSize = 10)
+    {
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+
+        var query = _orders.Values.Where(o => o.UserId == userId);
+        if (from.HasValue) query = query.Where(o => o.CreatedAtUtc >= from.Value);
+        if (to.HasValue) query = query.Where(o => o.CreatedAtUtc <= to.Value);
+        if (status.HasValue) query = query.Where(o => o.Status == status.Value);
+
+        var ordered = query.OrderByDescending(o => o.CreatedAtUtc).ToList();
+        var totalCount = ordered.Count;
+        var paged = ordered.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+
+        return Task.FromResult< (IReadOnlyList<Order> Items, int TotalCount) >((paged, totalCount));
+    }
 }
