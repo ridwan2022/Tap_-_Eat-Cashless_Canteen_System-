@@ -155,10 +155,11 @@ public class FeedbackServiceTests
 
             var menuService = new MenuService(Menu, new NotificationServiceTests.NullHubContext());
             var paymentTokens = new PaymentTokenService(Options.Create(new PaymentOptions { TokenSecret = "test-secret" }));
+            
             var queue = new QueueService(
                 QueueTokens, Orders, Events,
                 Options.Create(new KitchenOptions { Stations = 2 }),
-                Options.Create(new BusinessOptions()), Clock, notificationService);
+                Options.Create(new BusinessOptions()), Clock);
 
             OrderService = new OrderService(
                 Orders, Menu, menuService, queue, paymentTokens,

@@ -149,18 +149,20 @@ public class OrderHistoryAndSubsidyTests
 
             var menuService = new MenuService(Menu, new NotificationServiceTests.NullHubContext());
             var paymentTokens = new PaymentTokenService(Options.Create(new PaymentOptions { TokenSecret = "test-secret" }));
+            
             var queue = new QueueService(
                 QueueTokens, Orders, Events,
                 Options.Create(new KitchenOptions { Stations = 2 }),
-                Options.Create(new BusinessOptions()), Clock, notificationService);
+                Options.Create(new BusinessOptions()), Clock);
 
             OrderService = new OrderService(
                 Orders, Menu, menuService, queue, paymentTokens,
                 Options.Create(new OrderOptions { PaymentWindowMinutes = 15 }), Clock, null, notificationService);
 
             WalletService = new WalletService(Wallets, Users, Clock);
+            
             SubsidyService = new SubsidyService(
-                Wallets, WalletService, Users, Options.Create(new BusinessOptions()), Clock, notificationService);
+                Wallets, WalletService, Users, Options.Create(new BusinessOptions()), Clock);
         }
 
         public async Task<User> AddUserAsync(string name = "Test User", UserRole role = UserRole.Customer)
